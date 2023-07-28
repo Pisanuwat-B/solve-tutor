@@ -18,24 +18,28 @@ class AuthProvider extends ChangeNotifier {
 
   getSelfInfo() async {
     log("getSelfInfo");
-    uid = firebaseAuth.currentUser?.uid ?? "";
-    await firebaseFirestore
-        .collection('users')
-        .doc(uid)
-        .get()
-        .then((userFirebase) async {
-      if (userFirebase.exists) {
-        user = UserModel.fromJson(userFirebase.data()!);
-        // await getFirebaseMessagingToken();
-        //for setting user status to active
-        // updateActiveStatus(true);
-        if (user?.role == null || user?.role == "") {
-          await updateRoleFirestore('tutor');
+    try {
+      uid = firebaseAuth.currentUser?.uid ?? "";
+      await firebaseFirestore
+          .collection('users')
+          .doc(uid)
+          .get()
+          .then((userFirebase) async {
+        if (userFirebase.exists) {
+          user = UserModel.fromJson(userFirebase.data()!);
+          // await getFirebaseMessagingToken();
+          //for setting user status to active
+          // updateActiveStatus(true);
+          if (user?.role == null || user?.role == "") {
+            await updateRoleFirestore('tutor');
+          }
+          log('My Data: ${userFirebase.data()}');
+          notifyListeners();
         }
-        log('My Data: ${userFirebase.data()}');
-        notifyListeners();
-      }
-    });
+      });
+    } catch (e) {
+      signOut();
+    }
   }
 
   Future<bool> userExists(User userIn) async {

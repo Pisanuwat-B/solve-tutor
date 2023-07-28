@@ -191,7 +191,8 @@ class _WaitingJoinRoomState extends State<WaitingJoinRoom>
                     ? S.h(30)
                     : Countdown(courseStart: widget.course.start!),
                 S.h(10),
-                isActive ? _buttonJoinRoom() : _buttonNotYet(),
+                _buttonJoinRoom()
+                // isActive ? _buttonJoinRoom() : _buttonNotYet(),
               ] else ...[
                 SizedBox(height: 70, child: _microphone()),
               ],

@@ -8,7 +8,9 @@ import 'package:solve_tutor/auth.dart';
 import 'package:solve_tutor/authentication/service/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:solve_tutor/constants/theme.dart';
+import 'package:solve_tutor/widgets/dialogs.dart';
 import 'package:solve_tutor/widgets/sizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -39,9 +41,12 @@ class LoginPageState extends State<LoginPage> {
   Future<UserCredential?> _signInWithGoogle() async {
     try {
       await InternetAddress.lookup('google.com');
+      log('\nhere');
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      log('\nhere1');
       final GoogleSignInAuthentication? googleAuth =
           await googleUser?.authentication;
+      log('\nhere2');
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth?.accessToken,
         idToken: googleAuth?.idToken,
@@ -49,7 +54,7 @@ class LoginPageState extends State<LoginPage> {
       return await authprovider!.firebaseAuth.signInWithCredential(credential);
     } catch (e) {
       log('\n_signInWithGoogle: $e');
-      // Dialogs.showSnackbar(context, 'Something Went Wrong (Check Internet!)');
+      Dialogs.showSnackbar(context, 'Something Went Wrong (Check Internet!)');
       return null;
     }
   }
