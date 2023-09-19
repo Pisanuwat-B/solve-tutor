@@ -289,7 +289,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         barrierDismissible: true,
                         builder: (BuildContext context) {
                           return AlertDialog(
-                            content: const SizedBox(
+                            content:  SizedBox(
                               width: 300,
                               child: SingleChildScrollView(
                                 child: Column(
@@ -343,7 +343,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     onDoubleTap: () {},
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 15, 20, 5),
-                      child: const Row(
+                      child:  Row(
                         children: [
                           SizedBox(width: 20),
                           Expanded(

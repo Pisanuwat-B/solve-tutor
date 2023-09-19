@@ -865,7 +865,7 @@ class _ReviewLessonState extends State<ReviewLesson>
       backgroundColor: CustomColors.grayCFCFCF,
       body: Stack(
         children: [
-          const Column(
+           Column(
             children: [
               SizedBox(),
             ],

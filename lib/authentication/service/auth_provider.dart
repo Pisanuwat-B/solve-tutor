@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:solve_tutor/authentication/models/user_model.dart';
+import 'package:solve_tutor/authentication/service/fcm.dart';
 
 class AuthProvider extends ChangeNotifier {
   final GoogleSignIn googleSignIn = GoogleSignIn();
@@ -64,6 +65,7 @@ class AuthProvider extends ChangeNotifier {
     String? image,
   }) async {
     final time = DateTime.now().millisecondsSinceEpoch.toString();
+    final String deviceToken = await FCMServices().getDeviceToken();
     final chatUser = UserModel(
       id: id,
       name: name,
@@ -73,7 +75,7 @@ class AuthProvider extends ChangeNotifier {
       createdAt: time,
       isOnline: false,
       lastActive: time,
-      pushToken: '',
+      pushToken: deviceToken,
       role: '',
     );
     user = chatUser;
@@ -106,6 +108,8 @@ class AuthProvider extends ChangeNotifier {
           .createUserWithEmailAndPassword(email: email, password: password);
       userCrendetial.user!.updateDisplayName(name);
       final time = DateTime.now().millisecondsSinceEpoch.toString();
+      final String deviceToken = await FCMServices().getDeviceToken();
+
       final chatUser = UserModel(
         id: _auth.currentUser!.uid,
         name: name,
@@ -115,7 +119,7 @@ class AuthProvider extends ChangeNotifier {
         createdAt: time,
         isOnline: false,
         lastActive: time,
-        pushToken: '',
+        pushToken: deviceToken,
         role: 'tutor',
       );
       user = chatUser;

@@ -207,7 +207,7 @@ class _CourseLiveCalendarState extends State<CourseLiveCalendar>
               ],
             ),
             student.isLoadingCourseTutorToday
-                ? const Column(
+                ?  Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [

@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,11 +10,25 @@ import 'package:solve_tutor/constants/theme.dart';
 import 'package:solve_tutor/splash_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'authentication/service/fcm.dart';
+
+
+//global context
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
+  // initializeDateFormatting();
+
   initializeDateFormatting();
   WidgetsFlutterBinding.ensureInitialized();
-  // initializeDateFormatting();
   await Firebase.initializeApp();
+  //initial push notification
+  final FCMServices fcmService = FCMServices();
+  await fcmService.firebaseMessaging.setAutoInitEnabled(true);
+  await fcmService.initializeService();
+  //firebase background service
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -24,12 +39,14 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+
   @override
   Widget build(BuildContext context) {
     return Sizer(builder: (context, orientation, deviceType) {
       return MultiProvider(
         providers: stateIndex,
         child: MaterialApp(
+          navigatorKey: navigatorKey,
           title: AppConstants.appTitle,
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
@@ -42,5 +59,14 @@ class MyApp extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+// must handle in main methods
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage? message) async {
+  await Firebase.initializeApp();
+  if (message != null) {
+    //handle background notification
+    print("message: ${message.notification?.title}");
   }
 }

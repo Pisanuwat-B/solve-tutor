@@ -158,7 +158,7 @@ class _MyCourseLivePageState extends State<MyCourseLivePage> {
                 _rowDropdown(),
                 Expanded(
                   child: courseController.isLoading
-                      ? const Column(
+                      ?  Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [

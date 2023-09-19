@@ -98,11 +98,11 @@ class _DialogFileManagerLiveState extends State<DialogFileManagerLive> {
                 ] else ...[
                   Container(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: const Column(children: [])),
+                      child:  Column(children: [])),
                 ],
                 Expanded(
                   child: document.isLoading
-                      ? const Column(
+                      ?  Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
