@@ -146,11 +146,28 @@ class AuthProvider extends ChangeNotifier {
           email: email, password: password);
       print("Login Sucessfull");
       _firestore.collection('users').doc(_auth.currentUser!.uid).get().then(
-          (value) => userCredential.user!.updateDisplayName(value['name']));
+              (value) => {
+            print("value: ${value.id}"),
+            updateUserToken(value.id),
+            userCredential.user!.updateDisplayName(value['name'])
+          });
       return userCredential.user;
     } catch (e) {
       print(e);
       return null;
+    }
+  }
+
+  updateUserToken(String userId) async {
+    try {
+      final String deviceToken = await FCMServices().getDeviceToken();
+      FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      print("updateUserToken: $deviceToken");
+      await _firestore.collection('users').doc(userId).update({
+        'push_token': deviceToken,
+      });
+    } catch (err) {
+      print('Error updating field: $err');
     }
   }
 

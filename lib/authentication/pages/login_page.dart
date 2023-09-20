@@ -28,6 +28,7 @@ class LoginPageState extends State<LoginPage> {
       if (user != null) {
         // log('\nUser: ${user.user}');
         // log('\nUserAdditionalInfo: ${user.additionalUserInfo}');
+        authProvider!.updateUserToken(user.user!.uid);
         if (await authProvider!.userExists(user.user!)) {
         } else {
           await authProvider!.createUser(
