@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:lottie/lottie.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:solve_tutor/auth.dart';
 import 'package:solve_tutor/authentication/service/auth_provider.dart';
@@ -38,7 +38,7 @@ class SplashPageState extends State<SplashPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        // child: Lottie.asset("assets/images/logo.json", width: 100),
+        child: Lottie.asset("assets/images/logo.json", width: 100),
       ),
     );
   }

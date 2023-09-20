@@ -34,11 +34,12 @@ class FCMServices {
     const initSettings = InitializationSettings(
         android: androidInitializationSetting, iOS: iosInitializationSetting);
     await _flutterLocalNotificationsPlugin.initialize(initSettings);
-
+    await requestPermissions();
     // receive notification
     foregroundNotification();
     resumeNotification();
     terminateNotification();
+    print("getDeviceToken: ${getDeviceToken}");
   }
 
   showNotification(RemoteMessage message) {
