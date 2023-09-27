@@ -34,152 +34,154 @@ class _ManageCoursePageState extends State<ManageCoursePage> {
           ),
         ),
       ),
-      body: Container(
-        width: Sizer(context).w,
-        height: Sizer(context).h,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              SizedBox(height: 20),
-              Container(
-                  width: 110,
-                  height: 50,
-                  child: Image.asset('assets/images/solve1.png')),
-              Text(
-                "เทคโนโลยีใหม่ในการสอนพิเศษ",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Container(
+          width: Sizer(context).w,
+          height: Sizer(context).h,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(height: 20),
+                Container(
+                    width: 110,
+                    height: 50,
+                    child: Image.asset('assets/images/big_solve_logo.png')),
+                const Text(
+                  "ประสบการณ์ใหม่ของการสอนออนไลน์",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Text(
-                "เปลี่ยนวิธีการสอนพิเศษแบบเดิม ด้วยการสอนผ่านแอป SLOVE\nให้นักเรียนของคุณสามารถเรียนได้จากทุกที่ผ่านมือถือ หรือ Tablet",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: appTextSecondaryColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              GridView.count(
-                shrinkWrap: true,
-                primary: false,
-                padding: const EdgeInsets.all(30),
-                crossAxisSpacing: 30,
-                mainAxisSpacing: 30,
-                crossAxisCount: Sizer(context).w <= 600 ? 1 : 3,
-                children: <Widget>[
-                  // gridCard(
-                  //   context,
-                  //   onTap: () {},
-                  //   image: 'assets/images/graph1.png',
-                  //   title: "ภาพรวม",
-                  //   content:
-                  //       "ดูคอร์สขายดี, รายได้ของคุณ, จำนวนนักเรียนในคอร์ส, รีวิว, และคะแนนของคุณ",
-                  // ),
-                  gridCard(
-                    context,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MyCourseVDOPage(
+                // const Text(
+                //   "เปลี่ยนวิธีการสอนแบบเดิม\nให้นักเรียนของคุณสามารถเรียนได้จากทุกที่ผ่านมือถือ หรือ Tablet",
+                //   style: TextStyle(
+                //     fontSize: 14,
+                //     color: appTextSecondaryColor,
+                //   ),
+                //   textAlign: TextAlign.center,
+                // ),
+                GridView.count(
+                  shrinkWrap: true,
+                  primary: false,
+                  padding: const EdgeInsets.all(30),
+                  crossAxisSpacing: 30,
+                  mainAxisSpacing: 30,
+                  crossAxisCount: Sizer(context).w <= 600 ? 1 : 3,
+                  children: <Widget>[
+                    // gridCard(
+                    //   context,
+                    //   onTap: () {},
+                    //   image: 'assets/images/graph1.png',
+                    //   title: "ภาพรวม",
+                    //   content:
+                    //       "ดูคอร์สขายดี, รายได้ของคุณ, จำนวนนักเรียนในคอร์ส, รีวิว, และคะแนนของคุณ",
+                    // ),
+                    // gridCard(
+                    //   context,
+                    //   onTap: () async {
+                    //     await Navigator.push(
+                    //       context,
+                    //       MaterialPageRoute(
+                    //         builder: (context) => MyCourseVDOPage(
+                    //           tutorId: auth?.uid ?? "",
+                    //         ),
+                    //       ),
+                    //     );
+                    //   },
+                    //   image: 'assets/images/menu_my_course.png',
+                    //   title: "คอร์ส Marketplace",
+                    // ),
+                    gridCard(
+                      context,
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MyCourseLivePage(
+                              tutorId: auth?.uid ?? "",
+                            ),
+                          ),
+                        );
+                      },
+                      image: 'assets/images/menu_my_course.png',
+                      title: "คอร์ส Live",
+                      // content:
+                      //     "สร้างคอร์สสอนพิเศษของคุณ เพื่อลงขายใน Market Place ของเรา",
+                    ),
+                    // gridCard(
+                    //   context,
+                    //   onTap: () {},
+                    //   image: 'assets/images/student1.png',
+                    //   title: "จัดการนักเรียน",
+                    //   content:
+                    //       "แชร์คอร์ส จัดการรายชื่อ นักเรียนที่ลงทะเบียนในคอร์สของคุณ",
+                    // ),
+                    gridCard(
+                      context,
+                      onTap: () async {
+                        var route = MaterialPageRoute(
+                          builder: (context) => MyDocumentPage(
                             tutorId: auth?.uid ?? "",
                           ),
-                        ),
-                      );
-                    },
-                    image: 'assets/images/course1.png',
-                    title: "สร้างคอร์ส Marketplace",
-                    content:
-                        "สร้างคอร์สสอนพิเศษของคุณ เพื่อลงขายใน Market Place ของเรา",
-                  ),
-                  gridCard(
-                    context,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MyCourseLivePage(
-                            tutorId: auth?.uid ?? "",
-                          ),
-                        ),
-                      );
-                    },
-                    image: 'assets/images/course1.png',
-                    title: "สร้างคอร์สสอนสด",
-                    content:
-                        "สร้างคอร์สสอนพิเศษของคุณ เพื่อลงขายใน Market Place ของเรา",
-                  ),
-                  // gridCard(
-                  //   context,
-                  //   onTap: () {},
-                  //   image: 'assets/images/student1.png',
-                  //   title: "จัดการนักเรียน",
-                  //   content:
-                  //       "แชร์คอร์ส จัดการรายชื่อ นักเรียนที่ลงทะเบียนในคอร์สของคุณ",
-                  // ),
-                  gridCard(
-                    context,
-                    onTap: () async {
-                      var route = MaterialPageRoute(
-                        builder: (context) => MyDocumentPage(
-                          tutorId: auth?.uid ?? "",
-                        ),
-                      );
-                      await Navigator.push(context, route);
-                    },
-                    image: 'assets/images/cheet1.png',
-                    title: "สร้างชีท",
-                    content:
-                        "สร้างคลังเอกสารประกอบการเรียน เพื่อให้คุณสามารถแชร์เอกสารกับคอร์สอื่นๆได้",
-                  ),
-                  gridCard(
-                    context,
-                    onTap: () {},
-                    image: 'assets/images/qa1.png',
-                    title: "ตอบคำถามนักเรียน",
-                    content:
-                        "คำถามระหว่างเรียนของนักเรียนของคุณ ที่ต้องการให้คุณช่วยตอบ",
-                  ),
-                  gridCard(
-                    context,
-                    onTap: () {
-                      var route = MaterialPageRoute(
-                          builder: (context) => const ClassListPage());
-                      Navigator.push(context, route);
-                    },
-                    image: 'assets/images/find1.png',
-                    title: "ค้นหางานติวเตอร์",
-                    content:
-                        "ประกาศของนักเรียนที่กำลังมองหาติวเตอร์ คุณสามารถเข้า ไปเสนอราคาเพื่อรับงานได้",
-                  ),
-                  gridCard(
-                    context,
-                    onTap: () {
-                      var route = MaterialPageRoute(
-                          builder: (context) => const MyOrderPage());
-                      Navigator.push(context, route);
-                    },
-                    image: 'assets/images/find1.png',
-                    title: "รายการคำสั่งซื้อ",
-                    content: "รายการคำสั่งซื้อ",
-                  ),
-                ],
-              ),
-              const SizedBox(height: 50),
-            ],
+                        );
+                        await Navigator.push(context, route);
+                      },
+                      image: 'assets/images/menu_create_sheet.png',
+                      title: "สร้างชีท",
+                      // content:
+                      //     "สร้างคลังเอกสารประกอบการเรียน เพื่อให้คุณสามารถแชร์เอกสารกับคอร์สอื่นๆได้",
+                    ),
+                    // gridCard(
+                    //   context,
+                    //   onTap: () {},
+                    //   image: 'assets/images/menu_qa.png',
+                    //   title: "ตอบคำถามนักเรียน",
+                    //   // content:
+                    //   //     "คำถามระหว่างเรียนของนักเรียนของคุณ ที่ต้องการให้คุณช่วยตอบ",
+                    // ),
+                    gridCard(
+                      context,
+                      onTap: () {
+                        var route = MaterialPageRoute(
+                            builder: (context) => const ClassListPage());
+                        Navigator.push(context, route);
+                      },
+                      image: 'assets/images/menu_find_job.png',
+                      title: "ค้นหางานสอน",
+                      // content:
+                      //     "ประกาศของนักเรียนที่กำลังมองหาติวเตอร์ คุณสามารถเข้า ไปเสนอราคาเพื่อรับงานได้",
+                    ),
+                    gridCard(
+                      context,
+                      onTap: () {
+                        var route = MaterialPageRoute(
+                            builder: (context) => const MyOrderPage());
+                        Navigator.push(context, route);
+                      },
+                      image: 'assets/images/menu_find_job.png',
+                      title: "รายการคำสั่งซื้อ",
+                      // content:
+                      //     "ประกาศของนักเรียนที่กำลังมองหาติวเตอร์ คุณสามารถเข้า ไปเสนอราคาเพื่อรับงานได้",
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 50),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  /// TODO: FIX THIS UGLY THING
   Widget gridCard(
     BuildContext context, {
     required Function()? onTap,
     required String image,
     required String title,
-    required String content,
+    // required String content,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -198,7 +200,7 @@ class _ManageCoursePageState extends State<ManageCoursePage> {
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: SizedBox(
@@ -211,7 +213,7 @@ class _ManageCoursePageState extends State<ManageCoursePage> {
             const SizedBox(height: 20),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     title,
@@ -221,13 +223,13 @@ class _ManageCoursePageState extends State<ManageCoursePage> {
                       fontSize: 16,
                     ),
                   ),
-                  Text(
-                    content,
-                    style: const TextStyle(
-                      color: appTextSecondaryColor,
-                      fontSize: 14,
-                    ),
-                  ),
+                  // Text(
+                  //   content,
+                  //   style: const TextStyle(
+                  //     color: appTextSecondaryColor,
+                  //     fontSize: 14,
+                  //   ),
+                  // ),
                 ],
               ),
             ),
