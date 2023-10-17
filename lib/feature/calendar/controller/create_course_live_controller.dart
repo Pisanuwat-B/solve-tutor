@@ -380,7 +380,7 @@ class CourseLiveController extends ChangeNotifier {
     MenuCreateCourseModel(title: 'รายละเอียดคอร์ส', active: true),
     MenuCreateCourseModel(title: 'เลือกเอกสาร'),
     MenuCreateCourseModel(title: 'ตารางเรียน'),
-    MenuCreateCourseModel(title: 'ตั้งค่าคำถาม')
+    // MenuCreateCourseModel(title: 'ตั้งค่าคำถาม')
   ];
 
   Future<CourseModel> getCourseById(String id) async {

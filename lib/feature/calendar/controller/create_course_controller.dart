@@ -378,7 +378,7 @@ class CourseController extends ChangeNotifier {
     MenuCreateCourseModel(title: 'รายละเอียดคอร์ส', active: true),
     MenuCreateCourseModel(title: 'เลือกเอกสาร'),
     MenuCreateCourseModel(title: 'บันทึกบทเรียน'),
-    MenuCreateCourseModel(title: 'ตั้งค่าคำถาม')
+    // MenuCreateCourseModel(title: 'ตั้งค่าคำถาม')
   ];
 
   Future<CourseModel> getCourseById(String id) async {
@@ -415,6 +415,9 @@ class CourseController extends ChangeNotifier {
       if (courseData.id?.isNotEmpty == true &&
           courseData.tutorId?.isNotEmpty == true) {
         await CourseService().updateCourseDetails(courseData);
+        if (courseData.publishing ?? false) {
+          await updateCoursePublishing(courseData, true);
+        }
       }
     } catch (error) {
       debugPrint(error.toString());

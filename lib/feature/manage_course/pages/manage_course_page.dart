@@ -6,6 +6,8 @@ import 'package:solve_tutor/feature/calendar/pages/create_course_live.dart';
 import 'package:solve_tutor/feature/calendar/pages/my_course_live.dart';
 import 'package:solve_tutor/feature/cheet/pages/my_document.dart';
 import 'package:solve_tutor/feature/class/pages/class_list_page.dart';
+import 'package:solve_tutor/feature/manage_course/pages/manage_live_course_page.dart';
+import 'package:solve_tutor/feature/manage_course/pages/manage_market_course_page.dart';
 import 'package:solve_tutor/feature/market_place/pages/my_course_vdo.dart';
 import 'package:solve_tutor/widgets/sizer.dart';
 
@@ -16,211 +18,235 @@ class ManageCoursePage extends StatefulWidget {
   State<ManageCoursePage> createState() => _ManageCoursePageState();
 }
 
-class _ManageCoursePageState extends State<ManageCoursePage> {
+class _ManageCoursePageState extends State<ManageCoursePage>
+    with TickerProviderStateMixin {
   AuthProvider? auth;
+  TabController? _tabController;
+  @override
+  void initState() {
+    _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _tabController!.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     auth = Provider.of<AuthProvider>(context);
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        title: const Text(
-          'จัดการคอร์สเรียน',
-          style: TextStyle(
-            color: appTextPrimaryColor,
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          title: Text(
+            'คำสั่งซื้อ',
+            style: const TextStyle(
+              color: Colors.black,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: Container(
-          width: Sizer(context).w,
-          height: Sizer(context).h,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
+        backgroundColor: Colors.white,
+        body: DefaultTabController(
+          length: _tabController!.length,
+          child: Builder(builder: (context) {
+            return Column(
+              children: <Widget>[
                 SizedBox(height: 20),
                 Container(
                     width: 110,
                     height: 50,
                     child: Image.asset('assets/images/big_solve_logo.png')),
                 const Text(
-                  "ประสบการณ์ใหม่ของการสอนออนไลน์",
+                  "เทคโนโลยีใหม่ในการสอนพิเศษ",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                // const Text(
-                //   "เปลี่ยนวิธีการสอนแบบเดิม\nให้นักเรียนของคุณสามารถเรียนได้จากทุกที่ผ่านมือถือ หรือ Tablet",
-                //   style: TextStyle(
-                //     fontSize: 14,
-                //     color: appTextSecondaryColor,
-                //   ),
-                //   textAlign: TextAlign.center,
-                // ),
-                GridView.count(
-                  shrinkWrap: true,
-                  primary: false,
-                  padding: const EdgeInsets.all(30),
-                  crossAxisSpacing: 30,
-                  mainAxisSpacing: 30,
-                  crossAxisCount: Sizer(context).w <= 600 ? 1 : 3,
-                  children: <Widget>[
-                    // gridCard(
-                    //   context,
-                    //   onTap: () {},
-                    //   image: 'assets/images/graph1.png',
-                    //   title: "ภาพรวม",
-                    //   content:
-                    //       "ดูคอร์สขายดี, รายได้ของคุณ, จำนวนนักเรียนในคอร์ส, รีวิว, และคะแนนของคุณ",
-                    // ),
-                    gridCard(
-                      context,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MyCourseVDOPage(
-                              tutorId: auth?.uid ?? "",
+                const Text(
+                  "เปลี่ยนวิธีการสอนพิเศษแบบเดิม ด้วยการสอนผ่านแอป SLOVE\nให้นักเรียนของคุณสามารถเรียนได้จากทุกที่ผ่านมือถือ หรือ Tablet",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: appTextSecondaryColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  constraints: const BoxConstraints.expand(height: 80),
+                  decoration: const BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          color: Colors.white,
+                          child: TabBar(
+                            controller: _tabController,
+                            labelPadding: const EdgeInsets.all(4),
+                            labelColor: primaryColor,
+                            unselectedLabelColor: Colors.black,
+                            indicatorColor: primaryColor,
+                            onTap: (value) {},
+                            tabs: [
+                              Container(
+                                alignment: Alignment.center,
+                                constraints: const BoxConstraints(
+                                    minWidth: 100, minHeight: 150),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "คอร์สบันทึกย้อนหลัง",
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      "(SLOVE MARKETPLACE)",
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                alignment: Alignment.center,
+                                constraints: const BoxConstraints(
+                                    minWidth: 100, minHeight: 150),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "คอร์สสอนสด",
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      "(SLOVE LIVE)",
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: const [
+                      ManageMarketCoursePage(),
+                      ManageLiveCoursePage(),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: Container(
+          width: Sizer(context).w,
+          height: 80,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: primaryColor,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.8),
+                ),
+                child: Image.asset("assets/images/share.png"),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "แนะนำเพื่อนรับเงินคืน",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        );
-                      },
-                      image: 'assets/images/menu_my_course.png',
-                      title: "คอร์ส Marketplace",
+                        ),
+                      ],
                     ),
-                    gridCard(
-                      context,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MyCourseLivePage(
-                              tutorId: auth?.uid ?? "",
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "ส่ง Link แนะนำเเพื่อนให้มาใช้บริการแอป SLOVE วันนี้ ได้รับเงินคืนทันทีเมื่อเพื่อนใช้บริการครั้งแรก",
+                            style: TextStyle(
+                              color: Colors.white,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        );
-                      },
-                      image: 'assets/images/menu_my_course.png',
-                      title: "คอร์ส Live",
-                      // content:
-                      //     "สร้างคอร์สสอนพิเศษของคุณ เพื่อลงขายใน Market Place ของเรา",
-                    ),
-                    // gridCard(
-                    //   context,
-                    //   onTap: () {},
-                    //   image: 'assets/images/student1.png',
-                    //   title: "จัดการนักเรียน",
-                    //   content:
-                    //       "แชร์คอร์ส จัดการรายชื่อ นักเรียนที่ลงทะเบียนในคอร์สของคุณ",
-                    // ),
-                    gridCard(
-                      context,
-                      onTap: () async {
-                        var route = MaterialPageRoute(
-                          builder: (context) => MyDocumentPage(
-                            tutorId: auth?.uid ?? "",
-                          ),
-                        );
-                        await Navigator.push(context, route);
-                      },
-                      image: 'assets/images/menu_create_sheet.png',
-                      title: "สร้างชีท",
-                      // content:
-                      //     "สร้างคลังเอกสารประกอบการเรียน เพื่อให้คุณสามารถแชร์เอกสารกับคอร์สอื่นๆได้",
-                    ),
-                    // gridCard(
-                    //   context,
-                    //   onTap: () {},
-                    //   image: 'assets/images/menu_qa.png',
-                    //   title: "ตอบคำถามนักเรียน",
-                    //   // content:
-                    //   //     "คำถามระหว่างเรียนของนักเรียนของคุณ ที่ต้องการให้คุณช่วยตอบ",
-                    // ),
-                    gridCard(
-                      context,
-                      onTap: () {
-                        var route = MaterialPageRoute(
-                            builder: (context) => const ClassListPage());
-                        Navigator.push(context, route);
-                      },
-                      image: 'assets/images/menu_find_job.png',
-                      title: "ค้นหางานสอน",
-                      // content:
-                      //     "ประกาศของนักเรียนที่กำลังมองหาติวเตอร์ คุณสามารถเข้า ไปเสนอราคาเพื่อรับงานได้",
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 50),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// TODO: FIX THIS UGLY THING
-  Widget gridCard(
-    BuildContext context, {
-    required Function()? onTap,
-    required String image,
-    required String title,
-    // required String content,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(30),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
-              spreadRadius: 2,
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: SizedBox(
-                child: Image.asset(
-                  image,
-                  fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 10),
+              Container(
+                width: 100,
+                height: 45,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white,
+                ),
+                child: Text(
+                  "เข้าร่วม",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: appTextPrimaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  // Text(
-                  //   content,
-                  //   style: const TextStyle(
-                  //     color: appTextSecondaryColor,
-                  //     fontSize: 14,
-                  //   ),
-                  // ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

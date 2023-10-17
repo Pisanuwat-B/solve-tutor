@@ -145,7 +145,7 @@ class _CourseLiveCalendarState extends State<CourseLiveCalendar>
         ),
         actions: [
           if (_util.isTablet()) ...[
-            _buildButtonSearch(),
+            // _buildButtonSearch(),
             _buildButtonAddCourse()
           ]
         ],
@@ -188,7 +188,7 @@ class _CourseLiveCalendarState extends State<CourseLiveCalendar>
                 children: [
                   _historyText(),
                   Expanded(child: Container()),
-                  _buildButtonSearch(),
+                  // _buildButtonSearch(),
                   S.w(10),
                   _buildButtonAddCourse(),
                 ],
@@ -1420,24 +1420,25 @@ class _CourseLiveCalendarState extends State<CourseLiveCalendar>
   }
 
   Color _getWeekColor(int weekday) {
-    switch (weekday) {
-      case 1:
-        return Colors.black;
-      case 2:
-        return Colors.pinkAccent;
-      case 3:
-        return CustomColors.greenPrimary;
-      case 4:
-        return const Color(0xffFF9800);
-      case 5:
-        return Colors.blueAccent;
-      case 6:
-        return const Color(0xff8B5CF6);
-      case 7:
-        return const Color(0xffF44336);
-      default:
-        return Colors.black; // Should never be reached.
-    }
+    // switch (weekday) {
+    //   case 1:
+    //     return Colors.black;
+    //   case 2:
+    //     return Colors.pinkAccent;
+    //   case 3:
+    //     return CustomColors.greenPrimary;
+    //   case 4:
+    //     return const Color(0xffFF9800);
+    //   case 5:
+    //     return Colors.blueAccent;
+    //   case 6:
+    //     return const Color(0xff8B5CF6);
+    //   case 7:
+    //     return const Color(0xffF44336);
+    //   default:
+    //     return Colors.black; // Should never be reached.
+    // }
+    return CustomColors.greenPrimary;
   }
 
   Widget tableCalendarMobile() {

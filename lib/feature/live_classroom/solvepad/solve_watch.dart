@@ -28,5 +28,10 @@ class SolveStopwatch {
     }
   }
 
+  void jumpTo(Duration duration) {
+    _stopwatch.reset();
+    _elapsed = duration;
+  }
+
   Duration get elapsed => _elapsed + _stopwatch.elapsed;
 }

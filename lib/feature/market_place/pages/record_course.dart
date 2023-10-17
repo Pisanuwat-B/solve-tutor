@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_xlider/flutter_xlider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:solve_tutor/feature/calendar/controller/create_course_controller.dart';
@@ -150,9 +151,6 @@ class _RecordCourseState extends State<RecordCourse> {
   final List<List<SolvepadStroke?>> _highlighterPoints = [[]];
   final List<Offset> _eraserPoints = [const Offset(-100, -100)];
   final List<List<Offset?>> _replayPoints = [[]];
-  List<Offset?> _currentActionData = [];
-  final List<String?> _currentScrollData = [];
-  List<int> _currentActionTimestamp = [];
   DrawingMode _mode = DrawingMode.drag;
   final SolveStopwatch solveStopwatch = SolveStopwatch();
 
@@ -169,21 +167,14 @@ class _RecordCourseState extends State<RecordCourse> {
 
   // ---------- VARIABLE: Solve Pad features
   String _formattedElapsedTime = 'Recording 00:00:00';
-  final List<List<int>> _timeHistory = [];
-  final List<Map<String, dynamic>> _actionHistory = [];
   bool _isPrevBtnActive = false;
   bool _isNextBtnActive = true;
   int? activePointerId;
-  bool _isForwarding = false;
-  bool _isBackwarding = false;
-  int _replayOuterIndex = 0;
-  int _replayInnerIndex = 0;
 
   // ---------- VARIABLE: page control
   Timer? _laserTimer;
   Timer? _recordTimer;
   int _currentPage = 0;
-  int _currentReplayPage = 0;
   final PageController _pageController = PageController();
   final List<TransformationController> _transformationController = [];
   var courseController = CourseController();
@@ -192,6 +183,7 @@ class _RecordCourseState extends State<RecordCourse> {
   bool isRecording = false;
   bool isRecordEnd = false;
   bool isReplaying = false;
+  bool isReplayEnd = true;
 
   // ---------- VARIABLE: recorder
   Codec _codec = Codec.aacMP4;
@@ -201,6 +193,23 @@ class _RecordCourseState extends State<RecordCourse> {
   bool _mPlayerIsInited = false;
   bool _mRecorderIsInited = false;
   bool _mPlaybackReady = false;
+
+  // ---------- VARIABLE: new format
+  late Map<String, dynamic> _data;
+  String jsonData = '';
+  late List<Map<String, dynamic>> _actions;
+  List<StrokeStamp> currentStroke = [];
+  List<dynamic> currentEraserStroke = [];
+  List<ScrollZoomStamp> currentScrollZoom = [];
+  int currentReplayIndex = 0;
+  int currentReplayPointIndex = 0;
+  int currentReplayScrollIndex = 0;
+  double currentScale = 2.0;
+  double currentScrollX = 2.0;
+  double currentScrollY = 0;
+  Timer? _sliderTimer;
+  double replayProgress = 0;
+  int replayDuration = 100;
 
   /// TODO: Get rid of all Mockup reference
   @override
@@ -276,19 +285,20 @@ class _RecordCourseState extends State<RecordCourse> {
 
   @override
   dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeRight,
-      DeviceOrientation.landscapeLeft,
-    ]);
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // SystemChrome.setPreferredOrientations([
+    //   DeviceOrientation.portraitUp,
+    //   DeviceOrientation.portraitDown,
+    //   DeviceOrientation.landscapeRight,
+    //   DeviceOrientation.landscapeLeft,
+    // ]);
     _mPlayer!.closePlayer();
     _mPlayer = null;
     _mRecorder!.closeRecorder();
     _mRecorder = null;
     _pageController.dispose();
     _recordTimer?.cancel();
+    _sliderTimer?.cancel();
     _laserTimer?.cancel();
     super.dispose();
   }
@@ -330,10 +340,16 @@ class _RecordCourseState extends State<RecordCourse> {
       _currentPage = page;
       _penPoints[_currentPage].add(null);
     });
-    updateDataHistory(_mode);
     if (isRecording) {
-      _timeHistory.add([solveStopwatch.elapsed.inMilliseconds]);
-      _actionHistory.add({'action': 'change_page', 'data': page});
+      if (currentScrollZoom.isNotEmpty) {
+        addScrollZoom(currentScrollZoom, currentScrollZoom[0].timestamp);
+        currentScrollZoom.clear();
+      }
+      _actions.add({
+        "time": solveStopwatch.elapsed.inMilliseconds,
+        "type": "change-page",
+        "data": page,
+      });
     }
   }
 
@@ -345,25 +361,33 @@ class _RecordCourseState extends State<RecordCourse> {
     return 'Recording $hours:$minutes:$seconds';
   }
 
+  String _formatReplayElapsedTime(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String hours = twoDigits(duration.inHours);
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    String seconds = twoDigits(duration.inSeconds.remainder(60));
+
+    if (duration.inHours > 0) {
+      return '$hours:$minutes:$seconds';
+    } else {
+      return '$minutes:$seconds';
+    }
+  }
+
   // ---------- FUNCTION: solve pad feature
   double square(double x) => x * x;
   double sqrDistanceBetween(Offset p1, Offset p2) =>
       square(p1.dx - p2.dx) + square(p1.dy - p2.dy);
 
   void doErase(int index, DrawingMode mode) {
-    List<SolvepadStroke?> pointStack;
-    if (mode == DrawingMode.pen) {
-      pointStack = _penPoints[_currentPage];
-      removePointStack(pointStack, index);
-    } else if (mode == DrawingMode.highlighter) {
-      pointStack = _highlighterPoints[_currentPage];
-      removePointStack(pointStack, index);
-    }
-  }
-
-  void removePointStack(List<SolvepadStroke?> pointStack, int index) {
     int prevNullIndex = -1;
     int nextNullIndex = -1;
+    List<SolvepadStroke?> pointStack;
+    if (mode == DrawingMode.highlighter) {
+      pointStack = _highlighterPoints[_currentPage];
+    } else {
+      pointStack = _penPoints[_currentPage];
+    }
     for (int i = index; i >= 0; i--) {
       if (pointStack[i]?.offset == null) {
         prevNullIndex = i;
@@ -381,6 +405,12 @@ class _RecordCourseState extends State<RecordCourse> {
       setState(() {
         pointStack.removeRange(prevNullIndex, nextNullIndex);
       });
+      currentEraserStroke.add([
+        mode,
+        prevNullIndex,
+        nextNullIndex,
+        solveStopwatch.elapsed.inMilliseconds
+      ]);
     }
   }
 
@@ -394,16 +424,37 @@ class _RecordCourseState extends State<RecordCourse> {
     });
   }
 
+  void initSolvepadData() {
+    _data = {
+      "version": "2.0.0",
+      "solvepadWidth": mySolvepadSize.width,
+      "solvepadHeight": mySolvepadSize.height,
+      "metadata": {
+        "courseId": widget.course.id,
+        "tutorId": widget.course.tutorId,
+        "duration": 0,
+      },
+      "actions": []
+    };
+    _actions = (_data['actions'] as List).cast<Map<String, dynamic>>();
+    _actions.add({
+      "time": solveStopwatch.elapsed.inMilliseconds,
+      "type": "start-recording",
+      "page": _currentPage,
+      "scrollX": currentScrollX,
+      "scrollY": currentScrollY,
+      "scale": currentScale,
+    });
+  }
+
   void _initRecord() {
     solveStopwatch.reset();
     solveStopwatch.start();
-    _startRecordTimer();
     setState(() {
-      isRecording = !isRecording;
-      _timeHistory.add([solveStopwatch.elapsed.inMilliseconds]);
-      _actionHistory
-          .add({'action': 'start/stop-recording', 'data': _currentPage});
+      isRecording = true;
     });
+    _startRecordTimer();
+    initSolvepadData();
   }
 
   void _startRecordTimer() {
@@ -415,23 +466,22 @@ class _RecordCourseState extends State<RecordCourse> {
   }
 
   void _stopSolvePadRecord() {
-    setState(() {
-      _timeHistory.add(List<int>.from(_currentActionTimestamp));
-      _actionHistory.add({
-        'action':
-            '${_mode.toString()}|$_selectedIndexColors|$_selectedIndexLines',
-        'data': _mode == DrawingMode.drag
-            ? List<String?>.from(_currentScrollData)
-            : List<Offset?>.from(_currentActionData)
-      });
-      _currentActionTimestamp.clear();
-      _currentActionData.clear();
-      _timeHistory.add([solveStopwatch.elapsed.inMilliseconds]);
-      _actionHistory
-          .add({'action': 'start/stop-recording', 'data': _currentPage});
+    isRecording = false;
+    _mode = DrawingMode.drag;
+    if (currentScrollZoom.isNotEmpty) {
+      addScrollZoom(currentScrollZoom, currentScrollZoom[0].timestamp);
+      currentScrollZoom.clear();
+    }
+    _actions.add({
+      "time": solveStopwatch.elapsed.inMilliseconds,
+      "type": "stop-recording",
+      "data": null
     });
+    replayDuration = solveStopwatch.elapsed.inMilliseconds;
+    _data['metadata']['duration'] = replayDuration;
     solveStopwatch.reset();
     _stopRecordTimer();
+    setState(() {});
   }
 
   void _stopRecordTimer() {
@@ -443,471 +493,98 @@ class _RecordCourseState extends State<RecordCourse> {
     });
   }
 
-  void _initReplay() {
-    setState(() {
-      isReplaying = !isReplaying;
-      for (var point in _penPoints) {
-        point.clear();
+  void addDrawing(List<StrokeStamp> strokeStamp, int initTime) {
+    if (isRecording) {
+      _actions.add({
+        "time": initTime,
+        "type": "drawing",
+        "data": {
+          "tool": _mode.toString(),
+          "color": _strokeColors[_selectedIndexColors].value.toRadixString(16),
+          "strokeWidth": _strokeWidths[_selectedIndexLines],
+          "points": strokeStamp
+              .map((timedOffset) => {
+                    'x': double.parse(timedOffset.offset.dx.toStringAsFixed(2)),
+                    'y': double.parse(timedOffset.offset.dy.toStringAsFixed(2)),
+                    'time': timedOffset.timestamp,
+                  })
+              .toList()
+        }
+      });
+    }
+  }
+
+  void addErasing(List<dynamic> eraserStroke) {
+    if (isRecording && eraserStroke.isNotEmpty) {
+      List<Map<String, dynamic>> formattedActions = [];
+      List<Map<String, dynamic>> moveActions = [];
+
+      for (var action in eraserStroke) {
+        if (action[0] is Offset) {
+          moveActions.add({
+            'x': double.parse(action[0].dx.toStringAsFixed(2)),
+            'y': double.parse(action[0].dy.toStringAsFixed(2)),
+            'time': action[1],
+          });
+        } else if (action[0] is DrawingMode) {
+          if (moveActions.isNotEmpty) {
+            formattedActions.add({
+              'action': 'moves',
+              'points': moveActions,
+            });
+            moveActions = [];
+          }
+
+          formattedActions.add({
+            'action': 'erase',
+            'mode': action[0].toString(),
+            'prev': action[1],
+            'next': action[2],
+            'time': action[3],
+          });
+        }
       }
-      for (var point in _replayPoints) {
-        point.clear();
+
+      if (moveActions.isNotEmpty) {
+        formattedActions.add({
+          'action': 'moves',
+          'points': moveActions,
+        });
       }
-      for (var point in _highlighterPoints) {
-        point.clear();
-      }
-      _replay();
-    });
+
+      _actions.add({
+        "time": eraserStroke[0][1],
+        "type": "erasing",
+        "data": formattedActions,
+      });
+    }
+  }
+
+  void addScrollZoom(List<ScrollZoomStamp> scrollZoomStamp, int initTime) {
+    log('add scroll-zoom');
+    // log(scrollZoomStamp.toString());
+    if (isRecording) {
+      _actions.add({
+        "time": initTime,
+        "type": "scroll-zoom",
+        "data": scrollZoomStamp
+            .map((timedScroll) => {
+                  'x': double.parse(timedScroll.x.toStringAsFixed(2)),
+                  'y': double.parse(timedScroll.y.toStringAsFixed(2)),
+                  'scale': double.parse(timedScroll.scale.toStringAsFixed(2)),
+                  'time': timedScroll.timestamp,
+                })
+            .toList(),
+      });
+    }
   }
 
   // ---------- FUNCTION: solve pad core
-  Future<void> _replay() async {
-    solveStopwatch.reset();
-    solveStopwatch.start();
-
-    setState(() {
-      isReplaying = true;
-      _isBackwarding = false;
-    });
-
-    // log(_actionHistory.toString(), name: "action History");
-    // log(_timeHistory.toString(), name: "time History");
-
-    bool isFirstLoop = true;
-    while (_isBackwarding || isFirstLoop) {
-      isFirstLoop = false;
-      await _replayLoop(_replayOuterIndex, _replayInnerIndex);
-    }
-
-    _replayOuterIndex = 0;
-    _replayInnerIndex = 0;
-    _currentReplayPage = 0;
-    isReplaying = false;
-    solveStopwatch.stop();
-    log(' --------- end loop ----------');
-  }
-
-  Future<void> _replayLoop(int outerIndex, int innerIndex) async {
-    _isBackwarding = false;
-    bool shouldBreak = false;
-    for (int i = outerIndex; i < _actionHistory.length; i++) {
-      if (shouldBreak) {
-        break;
-      }
-      if (_actionHistory[i]['action'].startsWith('DrawingMode.pen') &&
-          _actionHistory[i]['data'].length > 0) {
-        var parts = _actionHistory[i]['action'].split('|');
-        _selectedIndexColors = int.parse(parts[1]);
-        _selectedIndexLines = int.parse(parts[2]);
-        int currentPointIndex = outerIndex == i ? innerIndex : 0;
-        while (currentPointIndex < _actionHistory[i]['data'].length) {
-          var timeSet = _timeHistory[i];
-          if (_isBackwarding) {
-            List<int> backPos =
-                getBackwardPosition(i, solveStopwatch.elapsed.inMilliseconds);
-            _extremeSkip(backPos[0], backPos[1]);
-            _replayOuterIndex = backPos[0];
-            _replayInnerIndex = backPos[1];
-            shouldBreak = true;
-            break;
-          }
-          await Future.delayed(const Duration(milliseconds: 0), () {
-            if (_isForwarding) {
-              int skippedTimeIndex = getSkippedIndex(timeSet, currentPointIndex,
-                  solveStopwatch.elapsed.inMilliseconds, timeSet.length - 1, 1);
-              for (currentPointIndex;
-                  currentPointIndex < skippedTimeIndex;
-                  currentPointIndex++) {
-                setState(() {
-                  _penPoints[_currentReplayPage] =
-                      List.from(_penPoints[_currentReplayPage])
-                        ..add(
-                          _actionHistory[i]['data'][currentPointIndex] != null
-                              ? SolvepadStroke(
-                                  _actionHistory[i]['data'][currentPointIndex],
-                                  _strokeColors[_selectedIndexColors],
-                                  _strokeWidths[_selectedIndexLines])
-                              : null,
-                        );
-                });
-              }
-              if (skippedTimeIndex != _timeHistory[i].length ||
-                  _timeHistory[i + 1][0] <=
-                      solveStopwatch.elapsed.inMilliseconds) {
-                _isForwarding = false;
-              }
-            }
-            if (solveStopwatch.elapsed.inMilliseconds >=
-                timeSet[currentPointIndex]) {
-              setState(() {
-                _penPoints[_currentReplayPage] =
-                    List.from(_penPoints[_currentReplayPage])
-                      ..add(
-                        _actionHistory[i]['data'][currentPointIndex] != null
-                            ? SolvepadStroke(
-                                _actionHistory[i]['data'][currentPointIndex],
-                                _strokeColors[_selectedIndexColors],
-                                _strokeWidths[_selectedIndexLines])
-                            : null,
-                      );
-              });
-              currentPointIndex += 1;
-            }
-          });
-        }
-      } //
-      else if (_actionHistory[i]['action']
-              .startsWith('DrawingMode.highlighter') &&
-          _actionHistory[i]['data'].length > 0) {
-        var parts = _actionHistory[i]['action'].split('|');
-        _selectedIndexColors = int.parse(parts[1]);
-        _selectedIndexLines = int.parse(parts[2]);
-        int currentPointIndex = outerIndex == i ? innerIndex : 0;
-        while (currentPointIndex < _actionHistory[i]['data'].length) {
-          var timeSet = _timeHistory[i];
-          if (_isBackwarding) {
-            List<int> backPos =
-                getBackwardPosition(i, solveStopwatch.elapsed.inMilliseconds);
-            _extremeSkip(backPos[0], backPos[1]);
-            _replayOuterIndex = backPos[0];
-            _replayInnerIndex = backPos[1];
-            shouldBreak = true;
-            break;
-          }
-          await Future.delayed(const Duration(milliseconds: 0), () {
-            if (_isForwarding) {
-              int skippedTimeIndex = getSkippedIndex(timeSet, currentPointIndex,
-                  solveStopwatch.elapsed.inMilliseconds, timeSet.length - 1, 1);
-              for (currentPointIndex;
-                  currentPointIndex < skippedTimeIndex;
-                  currentPointIndex++) {
-                setState(() {
-                  _highlighterPoints[_currentReplayPage] =
-                      List.from(_highlighterPoints[_currentReplayPage])
-                        ..add(
-                          _actionHistory[i]['data'][currentPointIndex] != null
-                              ? SolvepadStroke(
-                                  _actionHistory[i]['data'][currentPointIndex],
-                                  _strokeColors[_selectedIndexColors],
-                                  _strokeWidths[_selectedIndexLines])
-                              : null,
-                        );
-                });
-              }
-              if (skippedTimeIndex != _timeHistory[i].length ||
-                  _timeHistory[i + 1][0] <=
-                      solveStopwatch.elapsed.inMilliseconds) {
-                _isForwarding = false;
-              }
-            }
-            if (solveStopwatch.elapsed.inMilliseconds >=
-                timeSet[currentPointIndex]) {
-              setState(() {
-                _highlighterPoints[_currentReplayPage] =
-                    List.from(_highlighterPoints[_currentReplayPage])
-                      ..add(
-                        _actionHistory[i]['data'][currentPointIndex] != null
-                            ? SolvepadStroke(
-                                _actionHistory[i]['data'][currentPointIndex],
-                                _strokeColors[_selectedIndexColors],
-                                _strokeWidths[_selectedIndexLines])
-                            : null,
-                      );
-              });
-              currentPointIndex += 1;
-            }
-          });
-        }
-      } //
-      else if (_actionHistory[i]['action'].startsWith('DrawingMode.laser') &&
-          _actionHistory[i]['data'].length > 0) {
-        var parts = _actionHistory[i]['action'].split('|');
-        _selectedIndexColors = int.parse(parts[1]);
-        _selectedIndexLines = int.parse(parts[2]);
-        int currentPointIndex = outerIndex == i ? innerIndex : 0;
-        while (currentPointIndex < _actionHistory[i]['data'].length) {
-          var timeSet = _timeHistory[i];
-          if (_isBackwarding) {
-            List<int> backPos =
-                getBackwardPosition(i, solveStopwatch.elapsed.inMilliseconds);
-            _extremeSkip(backPos[0], backPos[1]);
-            _replayOuterIndex = backPos[0];
-            _replayInnerIndex = backPos[1];
-            shouldBreak = true;
-            break;
-          }
-          await Future.delayed(const Duration(milliseconds: 0), () {
-            if (_isForwarding) {
-              int skippedTimeIndex = getSkippedIndex(timeSet, currentPointIndex,
-                  solveStopwatch.elapsed.inMilliseconds, timeSet.length - 1, 1);
-              for (currentPointIndex;
-                  currentPointIndex < skippedTimeIndex;
-                  currentPointIndex++) {
-                setState(() {
-                  _laserPoints[_currentReplayPage] =
-                      List.from(_laserPoints[_currentReplayPage])
-                        ..add(
-                          _actionHistory[i]['data'][currentPointIndex] != null
-                              ? SolvepadStroke(
-                                  _actionHistory[i]['data'][currentPointIndex],
-                                  _strokeColors[_selectedIndexColors],
-                                  _strokeWidths[_selectedIndexLines])
-                              : null,
-                        );
-                  if (currentPointIndex != 0 &&
-                      timeSet[currentPointIndex] -
-                              timeSet[currentPointIndex - 1] >
-                          1500) {
-                    _stopLaserDrawing();
-                  }
-                });
-              }
-              if (skippedTimeIndex != _timeHistory[i].length ||
-                  _timeHistory[i + 1][0] <=
-                      solveStopwatch.elapsed.inMilliseconds) {
-                _isForwarding = false;
-              }
-            }
-            if (solveStopwatch.elapsed.inMilliseconds >=
-                timeSet[currentPointIndex]) {
-              setState(() {
-                _laserPoints[_currentReplayPage] =
-                    List.from(_laserPoints[_currentReplayPage])
-                      ..add(
-                        _actionHistory[i]['data'][currentPointIndex] != null
-                            ? SolvepadStroke(
-                                _actionHistory[i]['data'][currentPointIndex],
-                                _strokeColors[_selectedIndexColors],
-                                _strokeWidths[_selectedIndexLines])
-                            : null,
-                      );
-              });
-              if (_actionHistory[i]['data'][currentPointIndex] == null) {
-                _laserTimer = Timer(
-                    const Duration(milliseconds: 1500), _stopLaserDrawing);
-              } else {
-                _laserDrawing();
-              }
-              currentPointIndex += 1;
-            }
-          });
-        }
-      } //
-      else if (_actionHistory[i]['action'].startsWith('DrawingMode.eraser') &&
-          _actionHistory[i]['data'].length > 0) {
-        int currentPointIndex = outerIndex == i ? innerIndex : 0;
-        while (currentPointIndex < _actionHistory[i]['data'].length) {
-          if (_isBackwarding) {
-            List<int> backPos =
-                getBackwardPosition(i, solveStopwatch.elapsed.inMilliseconds);
-            _extremeSkip(backPos[0], backPos[1]);
-            _replayOuterIndex = backPos[0];
-            _replayInnerIndex = backPos[1];
-            shouldBreak = true;
-            break;
-          }
-          await Future.delayed(const Duration(milliseconds: 0), () {
-            var timeSet = _timeHistory[i];
-            if (_isForwarding) {
-              int skippedTimeIndex = getSkippedIndex(timeSet, currentPointIndex,
-                  solveStopwatch.elapsed.inMilliseconds, timeSet.length - 1, 1);
-              for (currentPointIndex;
-                  currentPointIndex < skippedTimeIndex;
-                  currentPointIndex++) {
-                setState(() {
-                  _eraserPoints[_currentReplayPage] =
-                      _actionHistory[i]['data'][currentPointIndex];
-                });
-                int penHit = _replayPoints[_currentReplayPage].indexWhere(
-                    (point) =>
-                        (point != null) &&
-                        sqrDistanceBetween(point,
-                                _actionHistory[i]['data'][currentPointIndex]) <=
-                            100);
-                int highlightHit = _highlighterPoints[_currentReplayPage]
-                    .indexWhere((point) =>
-                        (point != null) &&
-                        sqrDistanceBetween(point.offset,
-                                _actionHistory[i]['data'][currentPointIndex]) <=
-                            100);
-                if (penHit != -1) {
-                  doErase(penHit, DrawingMode.pen);
-                }
-                if (highlightHit != -1) {
-                  doErase(highlightHit, DrawingMode.highlighter);
-                }
-              }
-              if (skippedTimeIndex != _timeHistory[i].length ||
-                  _timeHistory[i + 1][0] <=
-                      solveStopwatch.elapsed.inMilliseconds) {
-                _isForwarding = false;
-              }
-            }
-            if (solveStopwatch.elapsed.inMilliseconds >=
-                timeSet[currentPointIndex]) {
-              setState(() {
-                _eraserPoints[_currentReplayPage] =
-                    _actionHistory[i]['data'][currentPointIndex];
-              });
-              int penHit = _replayPoints[_currentReplayPage].indexWhere(
-                  (point) =>
-                      (point != null) &&
-                      sqrDistanceBetween(point,
-                              _actionHistory[i]['data'][currentPointIndex]) <=
-                          100);
-              int highlightHit = _highlighterPoints[_currentReplayPage]
-                  .indexWhere((point) =>
-                      (point != null) &&
-                      sqrDistanceBetween(point.offset,
-                              _actionHistory[i]['data'][currentPointIndex]) <=
-                          100);
-              if (penHit != -1) {
-                doErase(penHit, DrawingMode.pen);
-              }
-              if (highlightHit != -1) {
-                doErase(highlightHit, DrawingMode.highlighter);
-              }
-              currentPointIndex += 1;
-            }
-          });
-        }
-      } //
-      else if (_actionHistory[i]['action'].startsWith('DrawingMode.drag') &&
-          _actionHistory[i]['data'].length > 0) {
-        log('in replay: page_scroll');
-        int currentPointIndex = outerIndex == i ? innerIndex : 0;
-        while (currentPointIndex < _actionHistory[i]['data'].length) {
-          await Future.delayed(const Duration(milliseconds: 0), () {
-            var timeSet = _timeHistory[i];
-            if (solveStopwatch.elapsed.inMilliseconds >=
-                timeSet[currentPointIndex]) {
-              _transformationController[_currentReplayPage]
-                  .value = Matrix4.identity()
-                ..setTranslationRaw(
-                    0,
-                    double.parse(_actionHistory[i]['data'][currentPointIndex]) *
-                        2,
-                    0)
-                ..scale(_transformationController[_currentReplayPage]
-                    .value
-                    .getMaxScaleOnAxis());
-
-              currentPointIndex += 1;
-            }
-          });
-        }
-      } //
-      else if (_actionHistory[i]['action'] == 'change_page' ||
-          _actionHistory[i]['action'] == 'start/stop-recording') {
-        int currentPointIndex = 0;
-        while (currentPointIndex <= 0) {
-          await Future.delayed(const Duration(milliseconds: 1), () {
-            if (solveStopwatch.elapsed.inMilliseconds >=
-                _timeHistory[i][currentPointIndex]) {
-              setState(() {
-                _currentReplayPage = _actionHistory[i]['data'];
-              });
-              _pageController.animateToPage(_currentReplayPage,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeIn);
-              currentPointIndex += 1;
-            }
-          });
-        }
-      }
-    }
-  }
-
-  void _extremeSkip(int outerLoopIndex, int innerLoopIndex) {
-    _clearReplayDisplay();
-    for (int i = 0; i <= outerLoopIndex; i++) {
-      if (_actionHistory[i]['action'] == 'DrawingMode.pen' &&
-          _actionHistory[i]['data'].length > 0) {
-        int forLength = (i == outerLoopIndex)
-            ? innerLoopIndex
-            : _actionHistory[i]['data'].length;
-        for (int j = 0; j <= forLength - 1; j++) {
-          setState(() {
-            _replayPoints[_currentReplayPage] =
-                List.from(_replayPoints[_currentReplayPage])
-                  ..add(_actionHistory[i]['data'][j]);
-          });
-        }
-      } //
-      else if (_actionHistory[i]['action'] == 'DrawingMode.highlighter' &&
-          _actionHistory[i]['data'].length > 0) {
-        int forLength = (i == outerLoopIndex)
-            ? innerLoopIndex
-            : _actionHistory[i]['data'].length;
-        for (int j = 0; j <= forLength - 1; j++) {
-          setState(() {
-            _highlighterPoints[_currentReplayPage] =
-                List.from(_highlighterPoints[_currentReplayPage])
-                  ..add(_actionHistory[i]['data'][j]);
-          });
-        }
-      } //
-      else if (_actionHistory[i]['action'] == 'DrawingMode.laser' &&
-          _actionHistory[i]['data'].length > 0) {
-        int forLength = (i == outerLoopIndex)
-            ? innerLoopIndex
-            : _actionHistory[i]['data'].length;
-        for (int j = 0; j <= forLength - 1; j++) {
-          setState(() {
-            _laserPoints[_currentReplayPage] =
-                List.from(_laserPoints[_currentReplayPage])
-                  ..add(_actionHistory[i]['data'][j]);
-          });
-          if (_actionHistory[i]['data'][j] == null) {
-            _laserTimer =
-                Timer(const Duration(milliseconds: 1500), _stopLaserDrawing);
-          } else {
-            _laserDrawing();
-          }
-        }
-      } //
-      else if (_actionHistory[i]['action'] == 'DrawingMode.eraser' &&
-          _actionHistory[i]['data'].length > 0) {
-        int forLength = (i == outerLoopIndex)
-            ? innerLoopIndex
-            : _actionHistory[i]['data'].length;
-        for (int j = 0; j <= forLength - 1; j++) {
-          setState(() {
-            _eraserPoints[_currentReplayPage] = _actionHistory[i]['data'][j];
-          });
-          int penHit = _replayPoints[_currentReplayPage].indexWhere((point) =>
-              (point != null) &&
-              sqrDistanceBetween(point, _actionHistory[i]['data'][j]) <= 100);
-          int highlightHit = _highlighterPoints[_currentReplayPage].indexWhere(
-              (point) =>
-                  (point != null) &&
-                  sqrDistanceBetween(
-                          point.offset, _actionHistory[i]['data'][j]) <=
-                      100);
-          if (penHit != -1) {
-            doErase(penHit, DrawingMode.pen);
-          }
-          if (highlightHit != -1) {
-            doErase(highlightHit, DrawingMode.highlighter);
-          }
-        }
-      } //
-      else if (_actionHistory[i]['action'] == 'change_page' ||
-          _actionHistory[i]['action'] == 'start/stop-recording') {
-        if (solveStopwatch.elapsed.inMilliseconds >= _timeHistory[i][0]) {
-          setState(() {
-            _currentReplayPage = _actionHistory[i]['data'];
-          });
-        }
-      }
-    }
-    log('end _extreme');
-  }
-
-  void _clearReplayDisplay() {
-    for (var point in _replayPoints) {
+  void clearReplayPoint() {
+    for (var point in _penPoints) {
       point.clear();
     }
-    for (var point in _laserPoints) {
+    for (var point in _replayPoints) {
       point.clear();
     }
     for (var point in _highlighterPoints) {
@@ -915,88 +592,195 @@ class _RecordCourseState extends State<RecordCourse> {
     }
   }
 
-  List<int> getBackwardPosition(int outerIndex, int elapse) {
-    int backwardOuterIndex = 0;
-    int backwardInnerIndex = 0;
-    for (int i = outerIndex; i > 0; i--) {
-      int backIndex = getSkippedIndex(
-          _timeHistory[i], 0, elapse, _timeHistory[i].length - 1, 0);
-      if (backIndex > 0 || i == 1 || _timeHistory[i - 1].last < elapse) {
-        backwardOuterIndex = i;
-        backwardInnerIndex = backIndex;
-        break;
-      }
-    }
-    return [backwardOuterIndex, backwardInnerIndex];
+  void pauseReplay() {
+    log('pause replay');
+    setState(() {
+      isReplaying = false;
+    });
+    pauseAudioPlayer();
+    solveStopwatch.stop();
   }
 
-  int getSkippedIndex(
-      List<int> sortedList, int start, int input, int end, int direction) {
-    while (start <= end) {
-      int mid = (start + end) ~/ 2;
-      if (sortedList[mid] < input) {
-        if (mid == sortedList.length - 1 || sortedList[mid + 1] >= input) {
-          return mid;
+  void resumeReplay() {
+    log('resume replay');
+    setState(() {
+      isReplaying = true;
+    });
+    resumeAudioPlayer();
+    solveStopwatch.start();
+  }
+
+  void _initReplay() {
+    log('init replay');
+    setState(() {
+      isReplaying = true;
+      isReplayEnd = false;
+      clearReplayPoint();
+    });
+    _replay();
+    playAudioPlayer();
+  }
+
+  Future<void> _replay() async {
+    log('_replay()');
+    solveStopwatch.start();
+    _sliderTimer = Timer.periodic(const Duration(milliseconds: 10), (timer) {
+      setState(() {
+        replayProgress = solveStopwatch.elapsed.inMilliseconds.toDouble();
+        if (replayProgress >= replayDuration.toDouble()) {
+          replayProgress = replayDuration.toDouble();
+          timer.cancel();
         }
-        start = mid + 1;
-      } else {
-        end = mid - 1;
-      }
-    }
-    return direction == 0 ? 0 : sortedList.length - 1;
-  }
-
-  void updateDataHistory(updateMode) {
-    if (!isRecording) return;
-    if (_mode != DrawingMode.drag) {
-      _timeHistory.add(List<int>.from(_currentActionTimestamp));
-      _actionHistory.add({
-        'action':
-            '${_mode.toString()}|$_selectedIndexColors|$_selectedIndexLines',
-        'data': List<Offset?>.from(_currentActionData)
       });
-      _currentActionTimestamp.clear();
-      _currentActionData.clear();
-      _mode = updateMode;
-    } else {
-      _timeHistory.add(List<int>.from(_currentActionTimestamp));
-      _actionHistory.add({
-        'action':
-            '${_mode.toString()}|$_selectedIndexColors|$_selectedIndexLines',
-        'data': List<String?>.from(_currentScrollData)
+    });
+
+    while (currentReplayIndex < _data['actions'].length) {
+      await Future.delayed(const Duration(milliseconds: 0), () async {
+        if (solveStopwatch.elapsed.inMilliseconds >=
+            _data['actions'][currentReplayIndex]['time']) {
+          await executeReplayAction(_data['actions'][currentReplayIndex]);
+          currentReplayIndex++;
+        }
       });
-      _currentActionTimestamp.clear();
-      _currentActionData.clear();
-      _mode = updateMode;
+    }
+
+    endReplay();
+  }
+
+  void endReplay() {
+    setState(() {
+      isReplaying = false;
+      isReplayEnd = true;
+    });
+    stopAudioPlayer();
+    _sliderTimer?.cancel();
+    solveStopwatch.reset();
+    currentReplayIndex = 0;
+    log(' --------- end loop ----------');
+  }
+
+  Future<void> executeReplayAction(Map<String, dynamic> action) async {
+    switch (action['type']) {
+      case 'start-recording':
+        var page = action['page'];
+        _pageController.animateToPage(
+          page,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        _transformationController[page].value = Matrix4.identity()
+          ..translate(action['scrollX'] / 2, action['scrollY'])
+          ..scale(action['scale']);
+        break;
+      case 'change-page':
+        _pageController.animateToPage(
+          action['data'],
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        break;
+      case 'stop-recording':
+        break;
+      case 'scroll-zoom':
+        List<Map<String, dynamic>> scrollAction = action['data'];
+        while (currentReplayScrollIndex < scrollAction.length) {
+          await Future.delayed(const Duration(milliseconds: 0), () {
+            if (solveStopwatch.elapsed.inMilliseconds >=
+                scrollAction[currentReplayScrollIndex]['time']) {
+              _transformationController[_currentPage].value = Matrix4.identity()
+                ..translate(scrollAction[currentReplayScrollIndex]['x'],
+                    scrollAction[currentReplayScrollIndex]['y'])
+                ..scale(scrollAction[currentReplayScrollIndex]['scale']);
+              currentReplayScrollIndex++;
+            }
+          });
+        }
+        currentReplayScrollIndex = 0;
+        break;
+      case 'drawing':
+        List<Map<String, dynamic>> points = action['data']['points'];
+        while (currentReplayPointIndex < points.length) {
+          await Future.delayed(const Duration(milliseconds: 0), () {
+            if (solveStopwatch.elapsed.inMilliseconds >=
+                points[currentReplayPointIndex]['time']) {
+              drawReplayPoint(
+                  points[currentReplayPointIndex],
+                  action['data']['tool'],
+                  action['data']['color'],
+                  action['data']['strokeWidth']);
+              currentReplayPointIndex++;
+            }
+          });
+        }
+        currentReplayPointIndex = 0;
+        drawReplayNull(action['data']['tool']);
+        break;
+      case 'erasing':
+        for (var eraseAction in action['data']) {
+          if (eraseAction['action'] == 'moves') {
+            int movingIndex = 0;
+            while (movingIndex < eraseAction['points'].length) {
+              await Future.delayed(const Duration(milliseconds: 0), () {
+                if (solveStopwatch.elapsed.inMilliseconds >=
+                    eraseAction['points'][movingIndex]['time']) {
+                  setState(() {
+                    _eraserPoints[_currentPage] = Offset(
+                        eraseAction['points'][movingIndex]['x'],
+                        eraseAction['points'][movingIndex]['y']);
+                  });
+                  movingIndex++;
+                }
+              });
+            }
+          } // move
+          else if (eraseAction['action'] == 'erase') {
+            while (
+                solveStopwatch.elapsed.inMilliseconds < eraseAction['time']) {
+              await Future.delayed(const Duration(milliseconds: 0), () {});
+            }
+            List<SolvepadStroke?> pointStack = _penPoints[_currentPage];
+            if (eraseAction['mode'] == "DrawingMode.pen") {
+              pointStack = _penPoints[_currentPage];
+            } else if (eraseAction['mode'] == "DrawingMode.highlighter") {
+              pointStack = _highlighterPoints[_currentPage];
+            }
+            setState(() {
+              pointStack.removeRange(eraseAction['prev'], eraseAction['next']);
+            });
+          } // erase
+        }
+        setState(() {
+          _eraserPoints[_currentPage] = const Offset(-100, -100);
+        });
+        break;
     }
   }
 
-  String _convertOffsetListToString(List<Offset?> offsetList) {
-    return offsetList
-        .map((offset) =>
-            '${offset?.dx.toStringAsFixed(2)}|${offset?.dy.toStringAsFixed(2)}')
-        .join(',');
+  void drawReplayPoint(
+      Map<String, dynamic> point, String tool, String color, double stroke) {
+    if (tool == "DrawingMode.pen") {
+      _penPoints[_currentPage].add(SolvepadStroke(
+        Offset(point['x'], point['y']),
+        Color(int.parse(color, radix: 16)),
+        stroke,
+      ));
+      setState(() {});
+    } else if (tool == "DrawingMode.highlighter") {
+      _highlighterPoints[_currentPage].add(SolvepadStroke(
+        Offset(point['x'], point['y']),
+        Color(int.parse(color, radix: 16)),
+        stroke,
+      ));
+      setState(() {});
+    }
   }
 
-  String _convertActionHistoryToString(
-      List<Map<String, dynamic>> actionHistory) {
-    String actionContent = '[';
-    String colon = ',';
-    for (var i = 0; i < actionHistory.length; i++) {
-      if (i == actionHistory.length - 1) colon = '';
-      if (actionHistory[i]['action'] == 'DrawingMode.pen' ||
-          actionHistory[i]['action'] == 'DrawingMode.laser' ||
-          actionHistory[i]['action'] == 'DrawingMode.eraser') {
-        List<Offset?> offsetList = List<Offset?>.from(actionHistory[i]['data']);
-        String dataString = _convertOffsetListToString(offsetList);
-        actionContent +=
-            '{action: ${actionHistory[i]['action']}, data: $dataString}$colon';
-      } else {
-        actionContent += '${actionHistory[i]}$colon';
-      }
+  void drawReplayNull(String tool) {
+    if (tool == "DrawingMode.pen") {
+      _penPoints[_currentPage].add(null);
+    } else if (tool == "DrawingMode.highlighter") {
+      _highlighterPoints[_currentPage].add(null);
     }
-    actionContent += ']';
-    return actionContent;
   }
 
   Future<void> writeToFile(String fileName, dynamic data) async {
@@ -1067,26 +851,24 @@ class _RecordCourseState extends State<RecordCourse> {
     });
   }
 
-  void playPlayer() {
+  void playAudioPlayer() {
     assert(_mPlayerIsInited &&
         _mPlaybackReady &&
         _mRecorder!.isStopped &&
         _mPlayer!.isStopped);
-    _mPlayer!
-        .startPlayer(
-            fromURI: _mPath,
-            whenFinished: () {
-              setState(() {});
-            })
-        .then((value) {
-      setState(() {});
-    });
+    _mPlayer!.startPlayer(fromURI: _mPath);
   }
 
-  void stopPlayer() {
-    _mPlayer!.stopPlayer().then((value) {
-      setState(() {});
-    });
+  void stopAudioPlayer() {
+    _mPlayer!.stopPlayer();
+  }
+
+  void pauseAudioPlayer() {
+    _mPlayer!.pausePlayer();
+  }
+
+  void resumeAudioPlayer() {
+    _mPlayer!.resumePlayer();
   }
 
   void getRecorderFn() {
@@ -1098,17 +880,6 @@ class _RecordCourseState extends State<RecordCourse> {
       record();
     } else {
       stopRecorder();
-    }
-  }
-
-  void getPlaybackFn() {
-    if (!_mPlayerIsInited || !_mPlaybackReady || !_mRecorder!.isStopped) {
-      return;
-    }
-    if (_mPlayer!.isStopped) {
-      playPlayer();
-    } else {
-      stopPlayer();
     }
   }
 
@@ -1133,8 +904,6 @@ class _RecordCourseState extends State<RecordCourse> {
         children: [
           Column(
             children: [
-              headerLayer1(),
-              const DividerLine(),
               headerLayer2(),
               const DividerLine(),
 
@@ -1150,6 +919,7 @@ class _RecordCourseState extends State<RecordCourse> {
               ),
             ],
           ),
+          if (isRecordEnd) slider(),
           if (openColors)
             Positioned(
               left: 150,
@@ -1179,7 +949,6 @@ class _RecordCourseState extends State<RecordCourse> {
                               InkWell(
                                 onTap: () {
                                   setState(() {
-                                    updateDataHistory(_mode);
                                     _selectedIndexColors = index;
                                     openColors = !openColors;
                                   });
@@ -1226,7 +995,6 @@ class _RecordCourseState extends State<RecordCourse> {
                           return InkWell(
                               onTap: () {
                                 setState(() {
-                                  updateDataHistory(_mode);
                                   _selectedIndexLines = index;
                                   openLines = !openLines;
                                 });
@@ -1277,11 +1045,83 @@ class _RecordCourseState extends State<RecordCourse> {
     );
   }
 
+  Widget slider() {
+    return Positioned(
+      left: 140,
+      top: 160,
+      child: SizedBox(
+        width: 60,
+        height: 490,
+        child: Stack(children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 25),
+            child: FlutterSlider(
+              axis: Axis.vertical,
+              values: [replayProgress],
+              max: replayDuration.toDouble(),
+              min: 0,
+              handlerAnimation: const FlutterSliderHandlerAnimation(scale: 1.2),
+              tooltip: FlutterSliderTooltip(
+                alwaysShowTooltip: true,
+                direction: FlutterSliderTooltipDirection.top,
+                positionOffset:
+                    FlutterSliderTooltipPositionOffset(top: -5, left: -40),
+                boxStyle: FlutterSliderTooltipBox(
+                    decoration:
+                        BoxDecoration(color: Colors.white.withOpacity(0))),
+                format: (value) {
+                  return _formatReplayElapsedTime(
+                      Duration(milliseconds: double.parse(value).round()));
+                },
+              ),
+              trackBar: FlutterSliderTrackBar(
+                activeTrackBarHeight: 5,
+                inactiveTrackBar: BoxDecoration(
+                  color: const Color(0xff20B153).withOpacity(0.3),
+                ),
+                activeTrackBar: const BoxDecoration(
+                  color: Color(0xff20B153),
+                ),
+              ),
+              onDragging: (handlerIndex, lowerValue, upperValue) {
+                var seekPosition = Duration(milliseconds: lowerValue.round());
+                if (lowerValue > replayProgress) {
+                  solveStopwatch.jumpTo(seekPosition);
+                  _mPlayer!.seekToPlayer(seekPosition);
+                  setState(() {});
+                }
+              },
+              // onDragCompleted: (handlerIndex, lowerValue, upperValue) {},
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 12,
+            child: Text('00:00', style: CustomStyles.med12GreenPrimary),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 12,
+            child: Text(
+                _formatReplayElapsedTime(
+                    Duration(milliseconds: replayDuration)),
+                style: CustomStyles.med12GreenPrimary),
+          ),
+        ]),
+      ),
+    );
+  }
+
   Widget solvePad() {
     return Expanded(
       child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
         double solvepadWidth = constraints.maxWidth;
+        double solvepadHeight = constraints.maxHeight;
+        currentScrollX = (-1 * solvepadWidth);
+        if (mySolvepadSize.width != solvepadWidth) {
+          mySolvepadSize = Size(solvepadWidth, solvepadHeight);
+        }
         return Stack(children: [
           PageView.builder(
             onPageChanged: _onPageViewChange,
@@ -1301,6 +1141,26 @@ class _RecordCourseState extends State<RecordCourse> {
                 alignment: const Alignment(-1, -1),
                 minScale: 1.0,
                 maxScale: 4.0,
+                onInteractionUpdate: (ScaleUpdateDetails details) {
+                  var translation =
+                      _transformationController[index].value.getTranslation();
+                  double scale = _transformationController[index]
+                      .value
+                      .getMaxScaleOnAxis();
+                  double originalTranslationX = translation.x;
+                  double originalTranslationY = translation.y;
+                  if (isRecording && _mode == DrawingMode.drag) {
+                    currentScrollZoom.add(ScrollZoomStamp(
+                        originalTranslationX,
+                        originalTranslationY,
+                        scale,
+                        solveStopwatch.elapsed.inMilliseconds));
+                  } else {
+                    currentScale = scale;
+                    currentScrollX = originalTranslationX;
+                    currentScrollY = originalTranslationY;
+                  }
+                },
                 child: Stack(
                   children: [
                     Center(
@@ -1321,19 +1181,15 @@ class _RecordCourseState extends State<RecordCourse> {
                               activePointerId = details.pointer;
                               switch (_mode) {
                                 case DrawingMode.pen:
+                                  currentStroke.add(StrokeStamp(
+                                      details.localPosition,
+                                      solveStopwatch.elapsed.inMilliseconds));
                                   _penPoints[_currentPage].add(
                                     SolvepadStroke(
                                         details.localPosition,
                                         _strokeColors[_selectedIndexColors],
                                         _strokeWidths[_selectedIndexLines]),
                                   );
-                                  _currentActionData =
-                                      List.from(_currentActionData)
-                                        ..add(details.localPosition);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   break;
                                 case DrawingMode.laser:
                                   _laserPoints[_currentPage].add(
@@ -1342,36 +1198,26 @@ class _RecordCourseState extends State<RecordCourse> {
                                         _strokeColors[_selectedIndexColors],
                                         _strokeWidths[_selectedIndexLines]),
                                   );
-                                  _currentActionData =
-                                      List.from(_currentActionData)
-                                        ..add(details.localPosition);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   _laserDrawing();
                                   break;
                                 case DrawingMode.highlighter:
+                                  currentStroke.add(StrokeStamp(
+                                      details.localPosition,
+                                      solveStopwatch.elapsed.inMilliseconds));
                                   _highlighterPoints[_currentPage].add(
                                     SolvepadStroke(
                                         details.localPosition,
                                         _strokeColors[_selectedIndexColors],
                                         _strokeWidths[_selectedIndexLines]),
                                   );
-                                  _currentActionData =
-                                      List.from(_currentActionData)
-                                        ..add(details.localPosition);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   break;
                                 case DrawingMode.eraser:
+                                  currentEraserStroke.add([
+                                    details.localPosition,
+                                    solveStopwatch.elapsed.inMilliseconds
+                                  ]);
                                   _eraserPoints[_currentPage] =
                                       details.localPosition;
-                                  _currentActionData.add(details.localPosition);
-                                  _currentActionTimestamp.add(
-                                      solveStopwatch.elapsed.inMilliseconds);
                                   int penHit = _penPoints[_currentPage]
                                       .indexWhere((point) =>
                                           (point?.offset != null) &&
@@ -1403,19 +1249,15 @@ class _RecordCourseState extends State<RecordCourse> {
                               activePointerId = details.pointer;
                               switch (_mode) {
                                 case DrawingMode.pen:
+                                  currentStroke.add(StrokeStamp(
+                                      details.localPosition,
+                                      solveStopwatch.elapsed.inMilliseconds));
                                   setState(() {
                                     _penPoints[_currentPage].add(SolvepadStroke(
                                         details.localPosition,
                                         _strokeColors[_selectedIndexColors],
                                         _strokeWidths[_selectedIndexLines]));
                                   });
-                                  _currentActionData =
-                                      List.from(_currentActionData)
-                                        ..add(details.localPosition);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   break;
                                 case DrawingMode.laser:
                                   setState(() {
@@ -1426,16 +1268,12 @@ class _RecordCourseState extends State<RecordCourse> {
                                           _strokeWidths[_selectedIndexLines]),
                                     );
                                   });
-                                  _currentActionData =
-                                      List.from(_currentActionData)
-                                        ..add(details.localPosition);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   _laserDrawing();
                                   break;
                                 case DrawingMode.highlighter:
+                                  currentStroke.add(StrokeStamp(
+                                      details.localPosition,
+                                      solveStopwatch.elapsed.inMilliseconds));
                                   setState(() {
                                     _highlighterPoints[_currentPage].add(
                                       SolvepadStroke(
@@ -1444,22 +1282,16 @@ class _RecordCourseState extends State<RecordCourse> {
                                           _strokeWidths[_selectedIndexLines]),
                                     );
                                   });
-                                  _currentActionData =
-                                      List.from(_currentActionData)
-                                        ..add(details.localPosition);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   break;
                                 case DrawingMode.eraser:
+                                  currentEraserStroke.add([
+                                    details.localPosition,
+                                    solveStopwatch.elapsed.inMilliseconds
+                                  ]);
                                   setState(() {
                                     _eraserPoints[_currentPage] =
                                         details.localPosition;
                                   });
-                                  _currentActionData.add(details.localPosition);
-                                  _currentActionTimestamp.add(
-                                      solveStopwatch.elapsed.inMilliseconds);
                                   int penHit = _penPoints[_currentPage]
                                       .indexWhere((point) =>
                                           (point?.offset != null) &&
@@ -1491,43 +1323,26 @@ class _RecordCourseState extends State<RecordCourse> {
                               activePointerId = null;
                               switch (_mode) {
                                 case DrawingMode.pen:
+                                  addDrawing(currentStroke,
+                                      currentStroke[0].timestamp);
+                                  currentStroke.clear();
                                   _penPoints[_currentPage].add(null);
-                                  _currentActionData =
-                                      List.from(_currentActionData)..add(null);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   break;
                                 case DrawingMode.laser:
                                   _laserPoints[_currentPage].add(null);
-                                  _currentActionData =
-                                      List.from(_currentActionData)..add(null);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   _laserTimer = Timer(
                                       const Duration(milliseconds: 1500),
                                       _stopLaserDrawing);
                                   break;
                                 case DrawingMode.highlighter:
+                                  addDrawing(currentStroke,
+                                      currentStroke[0].timestamp);
+                                  currentStroke.clear();
                                   _highlighterPoints[_currentPage].add(null);
-                                  _currentActionData =
-                                      List.from(_currentActionData)..add(null);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   break;
                                 case DrawingMode.eraser:
-                                  _currentActionData =
-                                      List.from(_currentActionData)
-                                        ..add(const Offset(-100, -100));
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
+                                  addErasing(currentEraserStroke);
+                                  currentEraserStroke.clear();
                                   setState(() {
                                     _eraserPoints[_currentPage] =
                                         const Offset(-100, -100);
@@ -1541,45 +1356,27 @@ class _RecordCourseState extends State<RecordCourse> {
                               if (activePointerId != details.pointer) return;
                               if (!isRecording) return;
                               activePointerId = null;
+                              currentStroke.clear();
                               switch (_mode) {
                                 case DrawingMode.pen:
+                                  addDrawing(currentStroke,
+                                      currentStroke[0].timestamp);
                                   _penPoints[_currentPage].add(null);
-                                  _currentActionData =
-                                      List.from(_currentActionData)..add(null);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   break;
                                 case DrawingMode.laser:
                                   _laserPoints[_currentPage].add(null);
-                                  _currentActionData =
-                                      List.from(_currentActionData)..add(null);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   _laserTimer = Timer(
                                       const Duration(milliseconds: 1500),
                                       _stopLaserDrawing);
                                   break;
                                 case DrawingMode.highlighter:
+                                  addDrawing(currentStroke,
+                                      currentStroke[0].timestamp);
+                                  currentEraserStroke.clear();
                                   _highlighterPoints[_currentPage].add(null);
-                                  _currentActionData =
-                                      List.from(_currentActionData)..add(null);
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
                                   break;
                                 case DrawingMode.eraser:
-                                  _currentActionData =
-                                      List.from(_currentActionData)
-                                        ..add(const Offset(-100, -100));
-                                  _currentActionTimestamp = List.from(
-                                      _currentActionTimestamp)
-                                    ..add(
-                                        solveStopwatch.elapsed.inMilliseconds);
+                                  addErasing(currentEraserStroke);
                                   setState(() {
                                     _eraserPoints[_currentPage] =
                                         const Offset(-100, -100);
@@ -1659,15 +1456,15 @@ class _RecordCourseState extends State<RecordCourse> {
         child: GestureDetector(
           onTap: () {
             if (!isReplaying) {
-              _initReplay();
+              if (isReplayEnd) {
+                _initReplay();
+              } else {
+                resumeReplay();
+              }
             } // before replay
             else {
-              log('pause replay');
-              setState(() {
-                isReplaying = false;
-              });
+              pauseReplay();
             }
-            getPlaybackFn();
           },
           child: Container(
             margin: const EdgeInsets.symmetric(vertical: 14.0),
@@ -1745,7 +1542,12 @@ class _RecordCourseState extends State<RecordCourse> {
       ]),
       child: Row(
         children: [
-          S.w(Responsive.isTablet(context) ? 5 : 24),
+          S.w(8),
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: CustomColors.gray878787),
+            onPressed: () => Navigator.pop(context),
+          ),
+          S.w(Responsive.isTablet(context) ? 5 : 12),
           Expanded(
             child: Align(
               alignment: Alignment.centerLeft,
@@ -1764,18 +1566,22 @@ class _RecordCourseState extends State<RecordCourse> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Image.asset(
-                      ImageAssets.allPages,
-                      height: 30,
-                      width: 32,
+                    S.w(8),
+                    InkWell(
+                      onTap: () => headerLayer1Mobile(),
+                      child: Image.asset(
+                        ImageAssets.iconInfoPage,
+                        height: 24,
+                        width: 24,
+                      ),
                     ),
-                    S.w(defaultPadding),
+                    S.w(8),
                     Container(
                       width: 1,
                       height: 24,
                       color: CustomColors.grayCFCFCF,
                     ),
-                    S.w(defaultPadding),
+                    S.w(6),
                     Material(
                       child: InkWell(
                         onTap: () {
@@ -1801,7 +1607,7 @@ class _RecordCourseState extends State<RecordCourse> {
                         ),
                       ),
                     ),
-                    S.w(defaultPadding),
+                    S.w(6),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -1825,7 +1631,7 @@ class _RecordCourseState extends State<RecordCourse> {
                     S.w(8.0),
                     Text("/ ${_pages.length}",
                         style: CustomStyles.med14Gray878787),
-                    S.w(8),
+                    S.w(6),
                     Material(
                       child: InkWell(
                         // splashColor: Colors.lightGreen,
@@ -1855,7 +1661,7 @@ class _RecordCourseState extends State<RecordCourse> {
                         ),
                       ),
                     ),
-                    S.w(6.0),
+                    S.w(6),
                   ],
                 ),
               ),
@@ -1900,34 +1706,35 @@ class _RecordCourseState extends State<RecordCourse> {
                   height: 40,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: CustomColors.greenPrimary,
+                      backgroundColor: isRecordEnd
+                          ? CustomColors.greenPrimary
+                          : CustomColors.inactivePagingBtn,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.0), // <-- Radius
                       ), // NEW
                     ),
                     onPressed: () async {
-                      var courseController = context.read<CourseController>();
-                      String actionString =
-                          _convertActionHistoryToString(_actionHistory);
-                      var solvePadData = {
-                        'time': _timeHistory,
-                        'action': actionString
-                      };
-                      await writeToFile('solvepad.txt', solvePadData);
-                      List uploadUrl = await firebaseService.uploadMarketSolvepad(
-                          '${widget.course.id!}_${widget.lesson.lessonId.toString()}');
-                      String solvepadId = await firebaseService
-                          .writeSolvepadData(uploadUrl[0], uploadUrl[1]);
-                      widget.lesson.media = solvepadId;
-                      await Alert.showOverlay(
-                        asyncFunction: () async {
-                          await courseController
-                              .updateCourseDetails(courseController.courseData);
-                        },
-                        context: context,
-                        loadingWidget: Alert.getOverlayScreen(),
-                      );
-                      showSnackBar(context, 'อัพโหลดสำเร็จ');
+                      if (isRecordEnd) {
+                        await Alert.showOverlay(
+                          asyncFunction: () async {
+                            var courseController =
+                                context.read<CourseController>();
+                            await writeToFile('solvepad.txt', _data);
+                            List uploadUrl =
+                                await firebaseService.uploadMarketSolvepad(
+                                    '${widget.course.id!}_${widget.lesson.lessonId.toString()}');
+                            String solvepadId = await firebaseService
+                                .writeSolvepadData(uploadUrl[0], uploadUrl[1]);
+                            widget.lesson.media = solvepadId;
+                            await courseController.updateCourseDetails(
+                                courseController.courseData);
+                          },
+                          context: context,
+                          loadingWidget: Alert.getOverlayScreen(),
+                        );
+                        if (!mounted) return;
+                        showSnackBar(context, 'อัพโหลดสำเร็จ');
+                      }
                     },
                     child: Row(
                       children: [
@@ -1978,30 +1785,30 @@ class _RecordCourseState extends State<RecordCourse> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           S.w(defaultPadding),
-                          if (Responsive.isMobile(context))
-                            Expanded(
-                                flex: 4,
-                                child: Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => Navigator.of(context).pop(),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: CustomColors.gray878787,
-                                        size: 18,
-                                      ),
-                                    ),
-                                    S.w(8),
-                                    Flexible(
-                                      child: Text(
-                                        courseName,
-                                        style: CustomStyles
-                                            .bold16Black363636Overflow,
-                                        maxLines: 1,
-                                      ),
-                                    ),
-                                  ],
-                                )),
+                          Expanded(
+                            flex: 4,
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () => Navigator.of(context).pop(),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: CustomColors.gray878787,
+                                    size: 18,
+                                  ),
+                                ),
+                                S.w(8),
+                                Flexible(
+                                  child: Text(
+                                    courseName,
+                                    style:
+                                        CustomStyles.bold16Black363636Overflow,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           Expanded(
                             flex: 2,
                             child: Row(
@@ -2013,9 +1820,7 @@ class _RecordCourseState extends State<RecordCourse> {
                                   width: 11,
                                   decoration: BoxDecoration(
                                       color: CustomColors.redF44336,
-                                      borderRadius: BorderRadius.circular(100)
-                                      //more than 50% of width makes circle
-                                      ),
+                                      borderRadius: BorderRadius.circular(100)),
                                 ),
                                 S.w(defaultPadding),
                               ],
@@ -2631,21 +2436,25 @@ class _RecordCourseState extends State<RecordCourse> {
                                           if (!isRecording) return;
                                           _selectedIndexTools = index;
                                         });
+                                        if (currentScrollZoom.isNotEmpty) {
+                                          addScrollZoom(currentScrollZoom,
+                                              currentScrollZoom[0].timestamp);
+                                          currentScrollZoom.clear();
+                                        }
                                         if (index == 0) {
-                                          updateDataHistory(DrawingMode.drag);
+                                          _mode = DrawingMode.drag;
                                         } // drag
                                         else if (index == 1) {
-                                          updateDataHistory(DrawingMode.pen);
+                                          _mode = DrawingMode.pen;
                                         } // pen
                                         else if (index == 2) {
-                                          updateDataHistory(
-                                              DrawingMode.highlighter);
+                                          _mode = DrawingMode.highlighter;
                                         } // high
                                         else if (index == 3) {
-                                          updateDataHistory(DrawingMode.eraser);
+                                          _mode = DrawingMode.eraser;
                                         } // eraser
                                         else if (index == 4) {
-                                          updateDataHistory(DrawingMode.laser);
+                                          _mode = DrawingMode.laser;
                                         } // laser
                                       },
                                       child: Image.asset(

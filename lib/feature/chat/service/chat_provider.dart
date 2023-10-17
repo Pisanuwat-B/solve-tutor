@@ -125,66 +125,30 @@ class ChatProvider extends ChangeNotifier {
     await sendMessage(chatId, userId, imageUrl, messageModel.MessageType.image);
   }
 
-  // Future<void> deleteMessage(Message message) async {
-  //   await firebaseFirestore
-  //       .collection('chats/${getConversationID(message.toId)}/messages/')
-  //       .doc(message.sent)
-  //       .delete();
-  //   if (message.type == Type.image) {
-  //     await storage.refFromURL(message.msg).delete();
-  //   }
-  // }
-
-  // Future<void> updateMessage(Message message, String updatedMsg) async {
-  //   await firebaseFirestore
-  //       .collection('chats/${getConversationID(message.toId)}/messages/')
-  //       .doc(message.sent)
-  //       .update({'msg': updatedMsg});
-  // }
-
-  // Stream<QuerySnapshot<Map<String, dynamic>>> getMyUsersId() {
-  //   return firebaseFirestore
-  //       .collection('users')
-  //       .doc(auth?.uid)
-  //       .collection('my_users')
-  //       .snapshots();
-  // }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> getMyOrderChat(String userId) {
-    log("getMyOrderChat : $userId");
-    calChatStack();
+  Stream<QuerySnapshot<Map<String, dynamic>>> getMyChat(String userId) {
+    // log("getMyOrderChat : $userId");
+    // calChatStack();
     return firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('my_order_chat')
+        .collection('chats')
+        .where('tutor_id', isEqualTo: userId)
+        .orderBy('updated_at', descending: true)
+        .limit(30)
         .snapshots();
   }
 
-  Future<List<ChatModel>> getAllChatV2(List<String> chatIds) async {
-    log('\nchatIds: $chatIds');
-    log('here 1111111 ${chatIds.length}');
-    List<ChatModel> chatList = [];
+  Future<ChatModel?> getChatInfoV2(String chatIds) async {
     try {
-      for (var i = 0; i < chatIds.length; i++) {
-        await firebaseFirestore
-            .collection('chats')
-            .doc(chatIds[i])
-            .get()
-            .then((value) {
-          log('here 2222 id : ${value.id}, data : ${value.data()}');
-          if (value.data() != null) {
-            ChatModel only = ChatModel.fromJson(value.data()!);
-            chatList.add(only);
-            log('here 3333 ${only.toJson()}');
-          }
-        });
-      }
-      log('chatList: ${chatList.length}');
-      chatList.sort((a, b) => b.updatedAt!.compareTo(a.updatedAt!));
-      return chatList;
+      // log('\nchatIds: $chatIds');
+      ChatModel? only;
+      var data = await firebaseFirestore.collection('chats').doc(chatIds).get();
+      // log("message112 ${json.encode(data.data())}");
+      var source = data.data();
+      only = ChatModel.fromJson(source!);
+      log('success');
+      return only;
     } catch (e) {
-      log('error: $e');
-      return chatList;
+      log("e : $e");
+      return null;
     }
   }
 
@@ -200,7 +164,7 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getTutorInfo(String id) async {
-    log("getTutorInfo : $id");
+    // log("getTutorInfo : $id");
     return await firebaseFirestore.collection('users').doc(id).get();
   }
 
@@ -212,18 +176,18 @@ class ChatProvider extends ChangeNotifier {
         .snapshots();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getAllUsers(
-      List<String> userIds) {
-    log('\nUserIds: $userIds');
-    return firebaseFirestore
-        .collection('users')
-        .where('id',
-            whereIn: userIds.isEmpty
-                ? ['']
-                : userIds) //because empty list throws an error
-        // .where('id', isNotEqualTo: user.uid)
-        .snapshots();
-  }
+  // Stream<QuerySnapshot<Map<String, dynamic>>> getAllUsers(
+  //     List<String> userIds) {
+  //   log('\nUserIds: $userIds');
+  //   return firebaseFirestore
+  //       .collection('users')
+  //       .where('id',
+  //           whereIn: userIds.isEmpty
+  //               ? ['']
+  //               : userIds) //because empty list throws an error
+  //       // .where('id', isNotEqualTo: user.uid)
+  //       .snapshots();
+  // }
 
   Future<bool> addChatUser(String email) async {
     final data = await firebaseFirestore
@@ -245,26 +209,26 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  num stackChat = 0;
-  calChatStack() async {
-    stackChat = 0;
-    var chatPath = firebaseFirestore.collection('chats');
-    var data1 = await chatPath.get();
-    final List<DocumentSnapshot> doc1 = data1.docs;
-    for (var i = 0; i < doc1.length; i++) {
-      log("auth ------ ${auth?.user?.id ?? ""}");
-      var element1 = doc1[i];
-      var messagePath = chatPath.doc(element1.id).collection('messages');
-      var data3Read = await messagePath.where('read', isEqualTo: '').get();
-      var data3NoteME = await messagePath
-          .where('fromId', isNotEqualTo: auth?.user?.id ?? "")
-          .get();
-      data3Read.docs.addAll(data3NoteME.docs);
-      log("message id : ${element1.id}, read size : ${data3Read.size}");
-      stackChat += data3Read.size;
-    }
-    log("stackChat : $stackChat");
-  }
+  // num stackChat = 0;
+  // calChatStack() async {
+  //   stackChat = 0;
+  //   var chatPath = firebaseFirestore.collection('chats');
+  //   var data1 = await chatPath.get();
+  //   final List<DocumentSnapshot> doc1 = data1.docs;
+  //   for (var i = 0; i < doc1.length; i++) {
+  //     log("auth ------ ${auth?.user?.id ?? ""}");
+  //     var element1 = doc1[i];
+  //     var messagePath = chatPath.doc(element1.id).collection('messages');
+  //     var data3Read = await messagePath.where('read', isEqualTo: '').get();
+  //     var data3NoteME = await messagePath
+  //         .where('fromId', isNotEqualTo: auth?.user?.id ?? "")
+  //         .get();
+  //     data3Read.docs.addAll(data3NoteME.docs);
+  //     log("message id : ${element1.id}, read size : ${data3Read.size}");
+  //     stackChat += data3Read.size;
+  //   }
+  //   log("stackChat : $stackChat");
+  // }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getStackChat(String chatId) {
     // log('\nchatIds: $chatId');

@@ -186,18 +186,26 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                     color: Colors.black,
                   ),
                 ),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(500),
-                  child: CachedNetworkImage(
-                    width: 50,
-                    height: 50,
-                    imageUrl: list.isNotEmpty
-                        ? list[0].image ?? ""
-                        : auth.user!.image ?? "",
-                    errorWidget: (context, url, error) =>
-                        const CircleAvatar(child: Icon(CupertinoIcons.person)),
-                  ),
-                ),
+                Builder(builder: (context) {
+                  if (list.isNotEmpty && list[0].image != null) {
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(500),
+                      child: CachedNetworkImage(
+                        width: 50,
+                        height: 50,
+                        imageUrl: list.isNotEmpty
+                            ? list[0].image ?? ""
+                            : auth.user!.image ?? "",
+                        errorWidget: (context, url, error) =>
+                            const CircleAvatar(
+                                child: Icon(CupertinoIcons.person)),
+                      ),
+                    );
+                  }
+                  return const CircleAvatar(
+                    child: Icon(CupertinoIcons.person),
+                  );
+                }),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -260,9 +261,10 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
   double scaleY = 0;
 
   // ---------- VARIABLE: Solve Pad features
+  int? activePointerId;
   bool _isPrevBtnActive = false;
   bool _isNextBtnActive = true;
-  int? activePointerId;
+  bool _isStylusActive = false;
 
   // ---------- VARIABLE: page control
   String _formattedElapsedTime = ' 00 : 00 : 00 ';
@@ -419,8 +421,8 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
       // if (_requestScreenShare) {
       setState(() {
         var decodedMessage = json.decode(message);
-        print('json message');
-        print(decodedMessage);
+        log('json message');
+        log(decodedMessage);
 
         var item = decodedMessage[0];
         var data = item['data'];
@@ -455,12 +457,8 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
           if (students.isEmpty) return;
           var studentIndex = getStudentIndex(uid);
           if (studentIndex == -1) {
-            print('ID not found');
-            print(students.length);
-            print(students[0]);
-            print(students[1]);
-            print(students[2]);
-            print(students[3]);
+            log('ID not found');
+            log('${students.length}');
           } else {
             setState(() {
               students[studentIndex]['attend'] = true;
@@ -587,11 +585,13 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
   void handleMessageChangePage(String data) {
     var parts = data.split(':');
     var pageNumber = int.parse(parts.last);
-    _pageController.animateToPage(
-      pageNumber,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    if (_currentPage != pageNumber) {
+      _pageController.animateToPage(
+        pageNumber,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void handleMessageInstantArt(String data) {
@@ -736,7 +736,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
           json.encode({'uid': widget.userId, 'data': data, 'time': time});
       channel?.sink.add(message);
     } catch (e) {
-      print('Error sending message: $e');
+      log('Error sending message: $e');
     }
   }
 
@@ -766,21 +766,21 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
     );
 
     _meeting.on(Events.participantJoined, (Participant participant) {
-      print('Student Join');
-      print(participant.displayName);
-      print(participant.id);
+      log('Student Join');
+      log(participant.displayName);
+      log(participant.id);
     });
 
     _meeting.on(Events.participantLeft, (Participant participant) {
-      print('Student Left');
-      print(participant.displayName);
-      print(participant.id);
+      log('Student Left');
+      log(participant.displayName);
+      log(participant.id);
     });
 
     // Called when meeting is ended
     _meeting.on(Events.roomLeft, (String? errorMsg) {
       if (errorMsg != null) {
-        print("Meeting left due to $errorMsg !!");
+        log("Meeting left due to $errorMsg !!");
       }
       Navigator.pop(context);
       // Navigator.pushAndRemoveUntil(
@@ -791,8 +791,8 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
 
     // Called when recording is started
     _meeting.on(Events.recordingStateChanged, (String status) async {
-      print('Conference Recording Changed');
-      print(status);
+      log('Conference Recording Changed');
+      log(status);
       setState(() {
         recordingState = status;
       });
@@ -802,7 +802,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
             isRecordingLoading = false;
             isRecordingOn = !isRecordingOn;
           });
-          print('RECORDING_STOPPED:$recordIndex');
+          log('RECORDING_STOPPED:$recordIndex');
           sendMessage('RECORDING_STOPPED:$recordIndex',
               stopwatch.elapsed.inMilliseconds);
           await fetchRecording(widget.meetingId);
@@ -822,7 +822,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
             isRecordingLoading = false;
             isRecordingOn = !isRecordingOn;
           });
-          print('RECORDING_STARTED:$recordIndex');
+          log('RECORDING_STARTED:$recordIndex');
           sendMessage('RECORDING_STARTED:$recordIndex',
               stopwatch.elapsed.inMilliseconds);
           break;
@@ -871,9 +871,9 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
     _meeting.on(
         Events.error,
         (error) => {
-              print('meeting function error'),
-              print(error['name'].toString()),
-              print(error['message'].toString())
+              log('meeting function error'),
+              log(error['name'].toString()),
+              log(error['message'].toString())
             });
   }
 
@@ -881,19 +881,16 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
     try {
       List recordList = [];
       var record = await fetchRecordings(widget.token, meetingID);
-      // print('record url');
-      // print(record);
       recordIndex += 1;
       record.forEach((r) {
         if (r['file'] != null) {
-          // print(r['file']['fileUrl']);
           recordList.add(r['file']['fileUrl']);
         }
       });
-      print(recordList);
+      log(recordList.toString());
       await updateAudioFile(recordList);
     } catch (error) {
-      print('fetchRecording error: $error');
+      log('fetchRecording error: $error');
     }
   }
 
@@ -1114,8 +1111,6 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
               ),
             ],
           ),
-
-          /// Status ShareScreen
           Positioned(
             top: 145,
             right: 60,
@@ -1133,7 +1128,12 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                       "หน้าจอ: $focusedStudentName", ImageAssets.avatarWomen),
               ],
             ),
-          ),
+          ), // Share screen pill
+          // Positioned(
+          //   top: 145,
+          //   left: 15,
+          //   child: statusTouchMode(),
+          // ), // Touch mode pill
           showListStudents(),
           if (openColors)
             Positioned(
@@ -1167,10 +1167,13 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                     _selectedIndexColors = index;
                                     openColors = !openColors;
                                   });
-                                  sendMessage(
-                                    'StrokeColor.$index',
-                                    stopwatch.elapsed.inMilliseconds,
-                                  );
+                                  int time = stopwatch.elapsed.inMilliseconds;
+                                  for (int i = 0; i <= 2; i++) {
+                                    sendMessage(
+                                      'StrokeColor.$index',
+                                      time,
+                                    );
+                                  }
                                 },
                                 child: Padding(
                                   padding: const EdgeInsets.all(3.0),
@@ -1218,10 +1221,13 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                     _selectedIndexLines = index;
                                     openLines = !openLines;
                                   });
-                                  sendMessage(
-                                    'StrokeWidth.$index',
-                                    stopwatch.elapsed.inMilliseconds,
-                                  );
+                                  int time = stopwatch.elapsed.inMilliseconds;
+                                  for (int i = 0; i <= 2; i++) {
+                                    sendMessage(
+                                      'StrokeWidth.$index',
+                                      time,
+                                    );
+                                  }
                                 });
                               },
                               child: Column(
@@ -1340,6 +1346,13 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                             onPointerDown: (details) {
                               if (activePointerId != null) return;
                               activePointerId = details.pointer;
+                              if (details.kind == PointerDeviceKind.stylus) {
+                                _isStylusActive = true;
+                              }
+                              if (_isStylusActive &&
+                                  details.kind == PointerDeviceKind.touch) {
+                                return;
+                              }
                               sendMessage(
                                 details.localPosition.toString(),
                                 stopwatch.elapsed.inMilliseconds,
@@ -1401,6 +1414,13 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                             onPointerMove: (details) {
                               if (activePointerId != details.pointer) return;
                               activePointerId = details.pointer;
+                              if (details.kind == PointerDeviceKind.stylus) {
+                                _isStylusActive = true;
+                              }
+                              if (_isStylusActive &&
+                                  details.kind == PointerDeviceKind.touch) {
+                                return;
+                              }
                               sendMessage(
                                 details.localPosition.toString(),
                                 stopwatch.elapsed.inMilliseconds,
@@ -1468,10 +1488,17 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                             onPointerUp: (details) {
                               if (activePointerId != details.pointer) return;
                               activePointerId = null;
-                              sendMessage(
-                                'null',
-                                stopwatch.elapsed.inMilliseconds,
-                              );
+                              if (_isStylusActive &&
+                                  details.kind == PointerDeviceKind.touch) {
+                                return;
+                              }
+                              int time = stopwatch.elapsed.inMilliseconds;
+                              for (int i = 0; i <= 2; i++) {
+                                sendMessage(
+                                  'null',
+                                  time,
+                                );
+                              }
                               switch (_mode) {
                                 case DrawingMode.pen:
                                   _penPoints[_currentPage].add(null);
@@ -1498,10 +1525,17 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                             onPointerCancel: (details) {
                               if (activePointerId != details.pointer) return;
                               activePointerId = null;
-                              sendMessage(
-                                'null',
-                                stopwatch.elapsed.inMilliseconds,
-                              );
+                              if (_isStylusActive &&
+                                  details.kind == PointerDeviceKind.touch) {
+                                return;
+                              }
+                              int time = stopwatch.elapsed.inMilliseconds;
+                              for (int i = 0; i <= 2; i++) {
+                                sendMessage(
+                                  'null',
+                                  time,
+                                );
+                              }
                               switch (_mode) {
                                 case DrawingMode.pen:
                                   _penPoints[_currentPage].add(null);
@@ -1615,7 +1649,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                 //   ),
                 //   child: InkWell(
                 //     onTap: () async {
-                //       print('test tapped');
+                //       log('test tapped');
                 //       await meeting.stopRecording();
                 //       await fetchRecording(widget.meetingId);
                 //     },
@@ -1681,8 +1715,8 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                               .collection('course_live')
                               .doc(widget.courseId)
                               .update({'currentMeetingCode': ''});
+                          await updateActualTime();
                         }
-                        await updateActualTime();
                         Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
@@ -1738,126 +1772,141 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
           S.w(Responsive.isTablet(context) ? 5 : 24),
           Expanded(
             flex: 2,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: CustomColors.grayCFCFCF,
-                    style: BorderStyle.solid,
-                    width: 1.0,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  color: CustomColors.whitePrimary,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Image.asset(
-                      ImageAssets.allPages,
-                      height: 30,
-                      width: 32,
-                    ),
-                    S.w(defaultPadding),
-                    Container(
-                      width: 1,
-                      height: 24,
-                      color: CustomColors.grayCFCFCF,
-                    ),
-                    S.w(defaultPadding),
-                    Material(
-                      child: InkWell(
-                        onTap: () {
-                          if (_pageController.hasClients &&
-                              _pageController.page!.toInt() != 0) {
-                            sendMessage(
-                              'ChangePage:${_currentPage - 1}',
-                              stopwatch.elapsed.inMilliseconds,
-                            );
-                            _pageController.animateToPage(
-                              _pageController.page!.toInt() - 1,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Image.asset(
-                            ImageAssets.backDis,
-                            height: 16,
-                            width: 17,
-                            color: _isPrevBtnActive
-                                ? CustomColors.activePagingBtn
-                                : CustomColors.inactivePagingBtn,
-                          ),
-                        ),
+            child: Row(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: CustomColors.grayCFCFCF,
+                        style: BorderStyle.solid,
+                        width: 1.0,
                       ),
+                      borderRadius: BorderRadius.circular(8),
+                      color: CustomColors.whitePrimary,
                     ),
-                    S.w(defaultPadding),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 1, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Image.asset(
+                          ImageAssets.allPages,
+                          height: 30,
+                          width: 32,
+                        ),
+                        S.w(defaultPadding),
+                        Container(
+                          width: 1,
+                          height: 24,
                           color: CustomColors.grayCFCFCF,
-                          style: BorderStyle.solid,
-                          width: 1.0,
                         ),
-                        borderRadius: BorderRadius.circular(4),
-                        color: CustomColors.whitePrimary,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text("Page ${_currentPage + 1}",
-                              style: CustomStyles.bold14greenPrimary),
-                        ],
-                      ),
-                    ),
-                    S.w(8.0),
-                    Text("/ ${_pages.length}",
-                        style: CustomStyles.med14Gray878787),
-                    S.w(8),
-                    Material(
-                      child: InkWell(
-                        // splashColor: Colors.lightGreen,
-                        onTap: () {
-                          if (_pages.length > 1) {
-                            if (_pageController.hasClients &&
-                                _pageController.page!.toInt() !=
-                                    _pages.length - 1) {
-                              sendMessage(
-                                'ChangePage:${_currentPage + 1}',
-                                stopwatch.elapsed.inMilliseconds,
-                              );
-                              _pageController.animateToPage(
-                                _pageController.page!.toInt() + 1,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Image.asset(
-                            ImageAssets.forward,
-                            height: 16,
-                            width: 17,
-                            color: _isNextBtnActive
-                                ? CustomColors.activePagingBtn
-                                : CustomColors.inactivePagingBtn,
+                        S.w(defaultPadding),
+                        Material(
+                          child: InkWell(
+                            onTap: () {
+                              if (_pageController.hasClients &&
+                                  _pageController.page!.toInt() != 0) {
+                                int page = _currentPage - 1;
+                                int time = stopwatch.elapsed.inMilliseconds;
+                                for (int i = 0; i <= 2; i++) {
+                                  sendMessage(
+                                    'ChangePage:$page',
+                                    time,
+                                  );
+                                }
+                                _pageController.animateToPage(
+                                  _pageController.page!.toInt() - 1,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.asset(
+                                ImageAssets.backDis,
+                                height: 16,
+                                width: 17,
+                                color: _isPrevBtnActive
+                                    ? CustomColors.activePagingBtn
+                                    : CustomColors.inactivePagingBtn,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        S.w(defaultPadding),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: CustomColors.grayCFCFCF,
+                              style: BorderStyle.solid,
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                            color: CustomColors.whitePrimary,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text("Page ${_currentPage + 1}",
+                                  style: CustomStyles.bold14greenPrimary),
+                            ],
+                          ),
+                        ),
+                        S.w(8.0),
+                        Text("/ ${_pages.length}",
+                            style: CustomStyles.med14Gray878787),
+                        S.w(8),
+                        Material(
+                          child: InkWell(
+                            // splashColor: Colors.lightGreen,
+                            onTap: () {
+                              if (_pages.length > 1) {
+                                if (_pageController.hasClients &&
+                                    _pageController.page!.toInt() !=
+                                        _pages.length - 1) {
+                                  int page = _currentPage + 1;
+                                  int time = stopwatch.elapsed.inMilliseconds;
+                                  for (int i = 0; i <= 2; i++) {
+                                    sendMessage(
+                                      'ChangePage:$page',
+                                      time,
+                                    );
+                                  }
+                                  _pageController.animateToPage(
+                                    _pageController.page!.toInt() + 1,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                }
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.asset(
+                                ImageAssets.forward,
+                                height: 16,
+                                width: 17,
+                                color: _isNextBtnActive
+                                    ? CustomColors.activePagingBtn
+                                    : CustomColors.inactivePagingBtn,
+                              ),
+                            ),
+                          ),
+                        ),
+                        S.w(6.0),
+                      ],
                     ),
-                    S.w(6.0),
-                  ],
+                  ),
                 ),
-              ),
+                S.w(8),
+                statusTouchMode(),
+              ],
             ),
           ),
           Expanded(
@@ -1877,15 +1926,37 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                         }
                       }
                     },
-                    child: Image.asset(
-                      isRecordingLoading
-                          ? ImageAssets.loading
-                          : isRecordingOn
-                              ? ImageAssets.recordDis
-                              : ImageAssets.recordEnable,
-                      height: 44,
-                      width: 44,
-                    ),
+                    // child: Image.asset(
+                    //   isRecordingLoading
+                    //       ? ImageAssets.loading
+                    //       : isRecordingOn
+                    //           ? ImageAssets.recordDis
+                    //           : ImageAssets.recordEnable,
+                    //   height: 44,
+                    //   width: 44,
+                    // ),
+                    child: isRecordingLoading
+                        ? Image.asset(
+                            ImageAssets.loading,
+                            height: 44,
+                            width: 44,
+                          )
+                        : Container(
+                            // margin: const EdgeInsets.symmetric(vertical: 14.0),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                                color: isRecordingOn
+                                    ? CustomColors.gray363636
+                                    : CustomColors.redFF4201,
+                                shape: BoxShape.circle),
+                            child: Icon(
+                              isRecordingOn
+                                  ? Icons.stop
+                                  : Icons.radio_button_checked_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
                 S.w(defaultPadding),
@@ -2027,7 +2098,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
           //       alignment: Alignment.centerRight,
           //       child: InkWell(
           //         onTap: () {
-          //           print('Go to Statistics');
+          //           log('Go to Statistics');
           //           showLeader(context);
           //         },
           //         child: Container(
@@ -2249,10 +2320,14 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                     onTap: () {
                       if (_pageController.hasClients &&
                           _pageController.page!.toInt() != 0) {
-                        sendMessage(
-                          'ChangePage:${_currentPage - 1}',
-                          stopwatch.elapsed.inMilliseconds,
-                        );
+                        int page = _currentPage - 1;
+                        int time = stopwatch.elapsed.inMilliseconds;
+                        for (int i = 0; i <= 2; i++) {
+                          sendMessage(
+                            'ChangePage:$page',
+                            time,
+                          );
+                        }
                         _pageController.animateToPage(
                           _pageController.page!.toInt() - 1,
                           duration: const Duration(milliseconds: 300),
@@ -2303,10 +2378,14 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                         if (_pageController.hasClients &&
                             _pageController.page!.toInt() !=
                                 _pages.length - 1) {
-                          sendMessage(
-                            'ChangePage:${_currentPage + 1}',
-                            stopwatch.elapsed.inMilliseconds,
-                          );
+                          int page = _currentPage + 1;
+                          int time = stopwatch.elapsed.inMilliseconds;
+                          for (int i = 0; i <= 2; i++) {
+                            sendMessage(
+                              'ChangePage:$page',
+                              time,
+                            );
+                          }
                           _pageController.animateToPage(
                             _pageController.page!.toInt() + 1,
                             duration: const Duration(milliseconds: 300),
@@ -2413,7 +2492,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
           //       alignment: Alignment.centerRight,
           //       child: InkWell(
           //         onTap: () {
-          //           print('Go to Statistics');
+          //           log('Go to Statistics');
           //           showLeader(context);
           //         },
           //         child: Container(
@@ -2564,9 +2643,8 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                     // Close popup
                                     openColors = !openColors;
                                   });
-                                  print('Tap : index $index');
-                                  print(
-                                      'Tap : _selectIndex $_selectedIndexColors');
+                                  log('Tap : index $index');
+                                  log('Tap : _selectIndex $_selectedIndexColors');
                                 },
                                 child: Image.asset(_listColors[index]['color'],
                                     width: 48),
@@ -2685,39 +2763,54 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                             });
                                             if (index == 0) {
                                               _mode = DrawingMode.drag;
-                                              sendMessage(
-                                                'DrawingMode.drag',
-                                                stopwatch
-                                                    .elapsed.inMilliseconds,
-                                              );
+                                              int time = stopwatch
+                                                  .elapsed.inMilliseconds;
+                                              for (int i = 0; i <= 2; i++) {
+                                                sendMessage(
+                                                  'DrawingMode.drag',
+                                                  time,
+                                                );
+                                              }
                                             } else if (index == 1) {
                                               _mode = DrawingMode.pen;
-                                              sendMessage(
-                                                'DrawingMode.pen',
-                                                stopwatch
-                                                    .elapsed.inMilliseconds,
-                                              );
+                                              int time = stopwatch
+                                                  .elapsed.inMilliseconds;
+                                              for (int i = 0; i <= 2; i++) {
+                                                sendMessage(
+                                                  'DrawingMode.pen',
+                                                  time,
+                                                );
+                                              }
                                             } else if (index == 2) {
                                               _mode = DrawingMode.highlighter;
-                                              sendMessage(
-                                                'DrawingMode.highlighter',
-                                                stopwatch
-                                                    .elapsed.inMilliseconds,
-                                              );
+                                              int time = stopwatch
+                                                  .elapsed.inMilliseconds;
+                                              for (int i = 0; i <= 2; i++) {
+                                                sendMessage(
+                                                  'DrawingMode.highlighter',
+                                                  time,
+                                                );
+                                              }
                                             } else if (index == 3) {
                                               _mode = DrawingMode.eraser;
-                                              sendMessage(
-                                                'DrawingMode.eraser',
-                                                stopwatch
-                                                    .elapsed.inMilliseconds,
-                                              );
+                                              int time = stopwatch
+                                                  .elapsed.inMilliseconds;
+                                              for (int i = 0; i <= 2; i++) {
+                                                sendMessage(
+                                                  'DrawingMode.eraser',
+                                                  time,
+                                                );
+                                              }
                                             } else if (index == 4) {
                                               _mode = DrawingMode.laser;
-                                              sendMessage(
-                                                'DrawingMode.laser',
-                                                stopwatch
-                                                    .elapsed.inMilliseconds,
-                                              );
+                                              int time = stopwatch
+                                                  .elapsed.inMilliseconds;
+                                              for (int i = 0; i <= 2; i++) {
+                                                sendMessage(
+                                                  'DrawingMode.laser',
+                                                  time,
+                                                );
+                                              }
                                             }
                                           },
                                           child: Image.asset(
@@ -2751,7 +2844,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                               S.w(defaultPadding),
                               InkWell(
                                 onTap: () {
-                                  print("Pick Line");
+                                  log("Pick Line");
 
                                   setState(() {
                                     if (openColors || openMore == true) {
@@ -2769,7 +2862,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                               S.w(4),
                               // InkWell(
                               //   onTap: () {
-                              //     print("Clear");
+                              //     log("Clear");
                               //   },
                               //   child: Image.asset(
                               //     ImageAssets.bin,
@@ -2948,7 +3041,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
             child: AnimatedContainer(
               duration: const Duration(seconds: 1),
               curve: Curves.fastOutSlowIn,
-              height: selectedTools ? 270 : MediaQuery.of(context).size.height,
+              height: selectedTools ? 270 : 440,
               width: 120,
               decoration: BoxDecoration(
                 border: Border.all(
@@ -2974,7 +3067,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                   //       children: [
                   //         InkWell(
                   //           onTap: () {
-                  //             print("Undo");
+                  //             log("Undo");
                   //           },
                   //           child: Image.asset(
                   //             ImageAssets.undo,
@@ -2983,7 +3076,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                   //         ),
                   //         InkWell(
                   //           onTap: () {
-                  //             print("Redo");
+                  //             log("Redo");
                   //           },
                   //           child: Image.asset(
                   //             ImageAssets.redo,
@@ -3030,34 +3123,54 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                         });
                                         if (index == 0) {
                                           _mode = DrawingMode.drag;
-                                          sendMessage(
-                                            'DrawingMode.drag',
-                                            stopwatch.elapsed.inMilliseconds,
-                                          );
+                                          int time =
+                                              stopwatch.elapsed.inMilliseconds;
+                                          for (int i = 0; i <= 2; i++) {
+                                            sendMessage(
+                                              'DrawingMode.drag',
+                                              time,
+                                            );
+                                          }
                                         } else if (index == 1) {
                                           _mode = DrawingMode.pen;
-                                          sendMessage(
-                                            'DrawingMode.pen',
-                                            stopwatch.elapsed.inMilliseconds,
-                                          );
+                                          int time =
+                                              stopwatch.elapsed.inMilliseconds;
+                                          for (int i = 0; i <= 2; i++) {
+                                            sendMessage(
+                                              'DrawingMode.pen',
+                                              time,
+                                            );
+                                          }
                                         } else if (index == 2) {
                                           _mode = DrawingMode.highlighter;
-                                          sendMessage(
-                                            'DrawingMode.highlighter',
-                                            stopwatch.elapsed.inMilliseconds,
-                                          );
+                                          int time =
+                                              stopwatch.elapsed.inMilliseconds;
+                                          for (int i = 0; i <= 2; i++) {
+                                            sendMessage(
+                                              'DrawingMode.highlighter',
+                                              time,
+                                            );
+                                          }
                                         } else if (index == 3) {
                                           _mode = DrawingMode.eraser;
-                                          sendMessage(
-                                            'DrawingMode.eraser',
-                                            stopwatch.elapsed.inMilliseconds,
-                                          );
+                                          int time =
+                                              stopwatch.elapsed.inMilliseconds;
+                                          for (int i = 0; i <= 2; i++) {
+                                            sendMessage(
+                                              'DrawingMode.eraser',
+                                              time,
+                                            );
+                                          }
                                         } else if (index == 4) {
                                           _mode = DrawingMode.laser;
-                                          sendMessage(
-                                            'DrawingMode.laser',
-                                            stopwatch.elapsed.inMilliseconds,
-                                          );
+                                          int time =
+                                              stopwatch.elapsed.inMilliseconds;
+                                          for (int i = 0; i <= 2; i++) {
+                                            sendMessage(
+                                              'DrawingMode.laser',
+                                              time,
+                                            );
+                                          }
                                         }
                                       },
                                       child: Image.asset(
@@ -3134,7 +3247,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                   //     children: [
                                   //       InkWell(
                                   //         onTap: () {
-                                  //           print("Clear");
+                                  //           log("Clear");
                                   //         },
                                   //         child: Image.asset(
                                   //           ImageAssets.bin,
@@ -3143,7 +3256,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                   //       ),
                                   //       InkWell(
                                   //         onTap: () {
-                                  //           print("More");
+                                  //           log("More");
                                   //
                                   //           setState(() {
                                   //             if (openColors ||
@@ -3605,7 +3718,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                     ),
                                   ),
                                 );
-                                print(selectedIndex);
+                                log(selectedIndex.toString());
                                 setState(() {
                                   focusedStudentId =
                                       students[selectedIndex!]['id'];
@@ -3782,6 +3895,48 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
             statusStudentShareScreen(
                 "หน้าจอ: $focusedStudentName", ImageAssets.avatarWomen),
         ],
+      ),
+    );
+  }
+
+  Widget statusTouchMode() {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _isStylusActive = !_isStylusActive;
+        });
+      },
+      child: Container(
+        height: 36,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(32),
+          color: CustomColors.greenPrimary,
+        ),
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _isStylusActive = !_isStylusActive;
+            });
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              S.w(16),
+              Image.asset(
+                _isStylusActive
+                    ? 'assets/images/pencil-dis.png'
+                    : 'assets/images/hand-dis.png',
+                width: 22,
+              ),
+              S.w(12),
+              Text(
+                _isStylusActive ? 'Stylus mode' : 'Touch mode',
+                style: CustomStyles.bold14White,
+              ),
+              S.w(16),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -4010,7 +4165,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                                                   value: quizList[index]
                                                       .isSelected,
                                                   onChanged: (bool? value) {
-                                                    print('checkbox tapped');
+                                                    log('checkbox tapped');
                                                     setState(() {
                                                       quizList[index]
                                                               .isSelected =
@@ -4503,7 +4658,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                               alignment: Alignment.centerRight,
                               child: InkWell(
                                 onTap: () {
-                                  print('Go to Statistics');
+                                  log('Go to Statistics');
                                   showLeader(context);
                                 },
                                 child: Container(

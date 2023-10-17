@@ -73,6 +73,11 @@ class _ChatOrderCardState extends State<ChatOrderCard> {
                         children: [
                           const SizedBox(width: 10),
                           Builder(builder: (context) {
+                            if (tutor?.image == null) {
+                              return const CircleAvatar(
+                                child: Icon(CupertinoIcons.person),
+                              );
+                            }
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(500),
                               child: CachedNetworkImage(

@@ -275,8 +275,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 10),
                   GestureDetector(
-                    onTap: ()
-                    async {
+                    onTap: () async {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -455,7 +454,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         const SizedBox(height: 10),
                         const Text(
-                          'SOLVE Instructor v 0.1.61',
+                          'SOLVE Instructor v 0.2.01',
                           style: TextStyle(
                             color: greyColor,
                           ),
