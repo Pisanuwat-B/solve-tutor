@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:solve_tutor/authentication/service/auth_provider.dart';
 import 'package:solve_tutor/constants/theme.dart';
+import 'package:solve_tutor/feature/audio/home_audio_page.dart';
 import 'package:solve_tutor/feature/calendar/pages/my_course_live.dart';
 import 'package:solve_tutor/feature/cheet/pages/my_document.dart';
 import 'package:solve_tutor/feature/class/pages/class_list_page.dart';
@@ -261,7 +262,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const MaintenancePage(),
+                              builder: (context) => HomeAudioPage(),
                             ),
                           );
                         },
