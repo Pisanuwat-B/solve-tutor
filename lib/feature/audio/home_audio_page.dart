@@ -1,8 +1,12 @@
+import 'dart:developer';
+
+import 'package:agora_token_service/agora_token_service.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 
 import 'package:solve_tutor/feature/audio/group_call_page.dart';
+import 'package:solve_tutor/feature/audio/until.dart';
 
 class HomeAudioPage extends StatefulWidget {
   @override
@@ -60,12 +64,29 @@ class _HomeAudioPageState extends State<HomeAudioPage> {
   Future<void> onJoin() async {
     // await _handleCameraAndMic(Permission.camera);
     await _handleCameraAndMic(Permission.microphone);
-
+    String channel = "dddd2";
+    String uid = "222";
+    int expirationInSeconds = 3600;
+    final currentTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    int expireTimestamp = currentTimestamp + expirationInSeconds;
+    String token = RtcTokenBuilder.build(
+      appId: appId,
+      appCertificate: cert,
+      channelName: channel,
+      uid: uid,
+      role: RtcRole.publisher,
+      expireTimestamp: expireTimestamp,
+    );
+    log("token : $token");
     // var route = MaterialPageRoute(
     //   builder: (context) => CallPage(channelName: ''),
     // );
     var route = MaterialPageRoute(
-      builder: (context) => GroupCallPage(),
+      builder: (context) => GroupCallPage(
+        token: token,
+        channel: channel,
+        uid: uid,
+      ),
     );
     // var route = MaterialPageRoute(
     //   builder: (context) => JoinChannelAudio(),

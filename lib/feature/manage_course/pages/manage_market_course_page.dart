@@ -304,7 +304,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                           'ตอบคำถามนักเรียน',
                           'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
                           true,
-                          const MaintenancePage()),
+                          HomeAudioPage()),
                     ],
                   ),
                 const SizedBox(height: 70),

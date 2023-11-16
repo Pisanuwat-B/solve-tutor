@@ -33,6 +33,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.8"
+  agora_token_service:
+    dependency: "direct main"
+    description:
+      name: agora_token_service
+      sha256: ce2829fb4923ef6c4e16839a00982718f8335b3726e4971354e27cebcf74566e
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   agora_uikit:
     dependency: "direct main"
     description:

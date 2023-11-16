@@ -6,8 +6,14 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:solve_tutor/feature/audio/until.dart';
 
 class GroupCallPage extends StatefulWidget {
-  const GroupCallPage({super.key});
-
+  GroupCallPage(
+      {super.key,
+      required this.token,
+      required this.channel,
+      required this.uid});
+  String token;
+  String channel;
+  String uid;
   @override
   State<GroupCallPage> createState() => _GroupCallPageState();
 }
@@ -153,7 +159,7 @@ class _GroupCallPageState extends State<GroupCallPage> {
             debugPrint("local user ${connection.localUid} joined");
             setState(() {
               final info =
-                  'onJoinChannel: $channel, uid: ${connection.localUid}';
+                  'onJoinChannel: ${widget.channel}, uid: ${connection.localUid}';
               _infoStrings.add(info);
             });
           },
@@ -190,24 +196,16 @@ class _GroupCallPageState extends State<GroupCallPage> {
       );
 
       await _engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
-      await _engine!.enableVideo();
+      // await _engine!.enableVideo();
       await _engine!.startPreview();
       await _engine!.joinChannel(
-        token: token,
-        channelId: channel,
+        token: widget.token,
+        channelId: widget.channel,
         uid: 0,
         options: const ChannelMediaOptions(),
       );
-      await _engine!.startAudioRecording(
-        AudioRecordingConfiguration(
-          filePath: "class_1",
-          encode: false,
-          sampleRate: 32000,
-          fileRecordingType: AudioFileRecordingType.audioFileRecordingMixed,
-          quality: AudioRecordingQualityType.audioRecordingQualityMedium,
-          recordingChannel: 1,
-        ),
-      );
+      // await _engine!.startAudioRecording(const AudioRecordingConfiguration());
+      setState(() {});
     } catch (e) {
       log("error : $e");
     }
