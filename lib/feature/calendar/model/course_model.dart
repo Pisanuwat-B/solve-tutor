@@ -177,9 +177,10 @@ class CalendarDate {
   DateTime? actualStart;
   DateTime? actualEnd;
   int? liveDuration;
+  String? meetingId;
 
   CalendarDate(
-      {this.start, this.end, this.courseName, this.courseId, this.reviewFile});
+      {this.start, this.end, this.courseName, this.courseId, this.reviewFile, this.audioFile, this.actualStart, this.actualEnd, this.liveDuration, this.meetingId});
 
   CalendarDate.fromJson(Map<String, dynamic> json) {
     start = DateTime.fromMillisecondsSinceEpoch(json['start']);
@@ -197,6 +198,7 @@ class CalendarDate {
         DateTime.fromMillisecondsSinceEpoch(json['actual_start'] ?? 0);
     actualEnd = DateTime.fromMillisecondsSinceEpoch(json['actual_end'] ?? 0);
     liveDuration = json['live_duration'] ?? 0;
+    meetingId = json['meeting_id'] ?? '';
   }
 
   Map<String, dynamic> toJson() {
@@ -212,6 +214,7 @@ class CalendarDate {
     data['actual_start'] = actualStart?.toUtc().millisecondsSinceEpoch;
     data['actual_end'] = actualEnd?.toUtc().millisecondsSinceEpoch;
     data['live_duration'] = liveDuration;
+    data['meeting_id'] = meetingId;
     return data;
   }
 }

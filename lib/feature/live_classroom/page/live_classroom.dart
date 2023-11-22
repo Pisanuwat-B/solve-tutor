@@ -957,7 +957,8 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
           _joined = true;
           setLiveCourseLoadState();
           updateMeetingCode();
-          // meeting.startRecording(config: {"mode": "audio"});
+          updateMeetingId();
+          meeting.startRecording(config: {"mode": "audio"});
           initWss();
         });
       },
@@ -999,10 +1000,11 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
             isRecordingLoading = false;
             isRecordingOn = false;
           });
-          log('RECORDING_STOPPED:$recordIndex');
+          // log('RECORDING_STOPPED:$recordIndex');
           sendMessage('RECORDING_STOPPED:$recordIndex',
               solveStopwatch.elapsed.inMilliseconds);
-          await fetchRecording(widget.meetingId);
+          recordIndex += 1;
+          // await fetchRecording(widget.meetingId);
           break;
         case 'RECORDING_STOPPING':
           setState(() {
@@ -1019,7 +1021,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
             isRecordingLoading = false;
             isRecordingOn = true;
           });
-          log('RECORDING_STARTED:$recordIndex');
+          // log('RECORDING_STARTED:$recordIndex');
           sendMessage('RECORDING_STARTED:$recordIndex',
               solveStopwatch.elapsed.inMilliseconds);
           clearCurrentReviewData();
@@ -1087,6 +1089,20 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
       await updateAudioFile(recordList);
     } catch (error) {
       log('fetchRecording error: $error');
+    }
+  }
+
+  Future<void> updateMeetingId() async {
+    var calendars = courseController.courseData?.calendars;
+    int indexToUpdate = calendars!.indexWhere((element) =>
+    element.start?.compareTo(
+        DateTime.fromMillisecondsSinceEpoch(widget.startTime)) ==
+        0);
+
+    if (indexToUpdate != -1) {
+      calendars[indexToUpdate].meetingId = widget.meetingId;
+      await courseController.updateSessionDetails(
+          context, courseController.courseData);
     }
   }
 
@@ -2056,9 +2072,9 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                 S.w(16.0),
                 InkWell(
                   onTap: () async {
-                    if (isRecordingOn) {
-                      showAlertRecordingDialog(context);
-                    } else {
+                    // if (isRecordingOn) {
+                    //   showAlertRecordingDialog(context);
+                    // } else {
                       setState(() {
                         isUploading = true;
                       });
@@ -2089,7 +2105,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                           isUploading = false;
                         });
                       });
-                    }
+                    // }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
