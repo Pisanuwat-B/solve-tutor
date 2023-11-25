@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:developer';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -290,10 +291,12 @@ class CourseLiveController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getCourseListByTutorIdAndCourseType(String tutor, String courseType) async {
+  Future<void> getCourseListByTutorIdAndCourseType(
+      String tutor, String courseType) async {
     isLoading = true;
     courseList.clear();
-    final data = await CourseLiveService().getCourseLiveListByTutorIdAndCourseType(tutor, courseType);
+    final data = await CourseLiveService()
+        .getCourseLiveListByTutorIdAndCourseType(tutor, courseType);
     courseList.addAll(data);
     isLoading = false;
     notifyListeners();
@@ -309,11 +312,13 @@ class CourseLiveController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshCourseListByTutorIdAndCourseType(String tutor, String courseType) async {
+  Future<void> refreshCourseListByTutorIdAndCourseType(
+      String tutor, String courseType) async {
     isLoading = true;
     courseList.clear();
     notifyListeners();
-    final data = await CourseLiveService().getCourseLiveListByTutorIdAndCourseType(tutor, courseType);
+    final data = await CourseLiveService()
+        .getCourseLiveListByTutorIdAndCourseType(tutor, courseType);
     courseList.addAll(data);
     isLoading = false;
     notifyListeners();
@@ -466,6 +471,19 @@ class CourseLiveController extends ChangeNotifier {
     }
   }
 
+  Future<void> updateSessionDetails(
+      BuildContext context, CourseModel? courseData) async {
+    try {
+      if (courseData == null) return;
+      if (courseData.id?.isNotEmpty == true &&
+          courseData.tutorId?.isNotEmpty == true) {
+        await CourseLiveService().updateCourseLiveDetails(courseData);
+      }
+    } catch (error) {
+      debugPrint('updateCourseDetails error: $error');
+    }
+  }
+
   Future<OrderClassModel> createMarketOrder(
     String courseId,
     String courseTitle,
@@ -508,16 +526,16 @@ class CourseLiveController extends ChangeNotifier {
     String studentId,
   ) async {
     final FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
-    String chatId = "${orderId}_${studentId}_${tutorId}";
+    String chatId = "${orderId}_${studentId}_$tutorId";
     await firebaseFirestore.collection('chats').doc(chatId).set({
       'chat_id': chatId,
-      'order_id': '$orderId',
-      'customer_id': '$studentId',
-      'tutor_id': '$tutorId',
+      'order_id': orderId,
+      'customer_id': studentId,
+      'tutor_id': tutorId,
     });
     // await makeMessage(chatId, studentId);
     // await makeMessage(chatId, tutorId);
-    print('created =>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+    log('created =>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
     return await getChatInfo(chatId);
   }
 

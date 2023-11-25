@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -80,10 +81,10 @@ class _WaitingJoinRoomState extends State<WaitingJoinRoom>
   }
 
   Future<void> createAndJoinMeeting(displayName) async {
-    if(widget.course.courseType == 'live') {
+    if (widget.course.courseType == 'live') {
       int totalMinuteLive = ((widget.course.end!.millisecondsSinceEpoch -
-          widget.course.start!.millisecondsSinceEpoch) /
-          60000)
+                  widget.course.start!.millisecondsSinceEpoch) /
+              60000)
           .ceil();
       int? students = widget.course.studentCount ?? 0;
       int? minPoint = totalMinuteLive * students;
@@ -94,57 +95,58 @@ class _WaitingJoinRoomState extends State<WaitingJoinRoom>
         try {
           var meetingID = await createMeeting(_token);
           if (mounted) {
+            log('meeting ID: $meetingID');
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    TutorLiveClassroom(
-                      token: _token,
-                      userId: widget.course.tutorId!,
-                      courseId: widget.course.courseId!,
-                      startTime: widget.course.start!.millisecondsSinceEpoch,
-                      meetingId: meetingID,
-                      isHost: true,
-                      displayName: displayName,
-                      micEnabled: isMicOn,
-                      camEnabled: false,
-                    ),
+                builder: (context) => TutorLiveClassroom(
+                  token: _token,
+                  userId: widget.course.tutorId!,
+                  courseId: widget.course.courseId!,
+                  startTime: widget.course.start!.millisecondsSinceEpoch,
+                  meetingId: meetingID,
+                  isHost: true,
+                  displayName: displayName,
+                  micEnabled: isMicOn,
+                  camEnabled: false,
+                ),
               ),
             );
           }
         } catch (error) {
+          if (!mounted) return;
           showSnackBarMessage(
               message: 'ERROR ON CREATE ROOM ${error.toString()}',
               context: context);
         }
       } else {
+        if (!mounted) return;
         showAlertRecordingDialog(
           context,
           title: 'Solve Coin ไม่เพียงพอ',
           detail:
-          '\t\t\tSolve Coin ของคุณไม่เพียงพอสำหรับใช้เข้าสอนในคลาสนี้\nกรุณาติดต่อทีมงานดูแลลูกค้าได้ในเวลา 11.00-22.00 น.',
+              '\t\t\tSolve Coin ของคุณไม่เพียงพอสำหรับใช้เข้าสอนในคลาสนี้\nกรุณาติดต่อทีมงานดูแลลูกค้าได้ในเวลา 11.00-22.00 น.',
           confirm: 'ตกลง',
         );
       }
-    }else{
+    } else {
       try {
         var meetingID = await createMeeting(_token);
         if (mounted) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  TutorLiveClassroom(
-                    token: _token,
-                    userId: widget.course.tutorId!,
-                    courseId: widget.course.courseId!,
-                    startTime: widget.course.start!.millisecondsSinceEpoch,
-                    meetingId: meetingID,
-                    isHost: true,
-                    displayName: displayName,
-                    micEnabled: isMicOn,
-                    camEnabled: false,
-                  ),
+              builder: (context) => TutorLiveClassroom(
+                token: _token,
+                userId: widget.course.tutorId!,
+                courseId: widget.course.courseId!,
+                startTime: widget.course.start!.millisecondsSinceEpoch,
+                meetingId: meetingID,
+                isHost: true,
+                displayName: displayName,
+                micEnabled: isMicOn,
+                camEnabled: false,
+              ),
             ),
           );
         }
@@ -168,7 +170,8 @@ class _WaitingJoinRoomState extends State<WaitingJoinRoom>
     if (indexToUpdate != -1) {
       calendars[indexToUpdate].actualStart = now;
     }
-    await courseController.updateCourseDetails(
+    if (!mounted) return;
+    await courseController.updateSessionDetails(
         context, courseController.courseData);
   }
 
@@ -241,8 +244,8 @@ class _WaitingJoinRoomState extends State<WaitingJoinRoom>
                 S.h(10),
                 _timeJoin(),
                 S.h(10),
-                widget.course.courseType == 'live' ? SizedBox(height: 100, child: _microphone()) : const SizedBox(),
-                widget.course.courseType == 'live' ? S.h(10) : const SizedBox(),
+                SizedBox(height: 100, child: _microphone()),
+                S.h(10),
                 _tutorTitle(),
                 S.h(30),
                 isActive
@@ -258,8 +261,8 @@ class _WaitingJoinRoomState extends State<WaitingJoinRoom>
                 S.h(10),
                 isActive ? _buttonJoinRoom() : _buttonNotYet(),
               ] else ...[
-                widget.course.courseType == 'live' ? SizedBox(height: 70, child: _microphone()) : const SizedBox(),
-                widget.course.courseType == 'live' ? S.h(10) : const SizedBox(),
+                SizedBox(height: 70, child: _microphone()),
+                S.h(10),
                 if (!isActive)
                   Countdown(
                     courseStart: widget.course.start!,

@@ -34,32 +34,118 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                Row(
-                  children: [
-                    mobileCard(
+                if (!Responsive.isMobileLandscape(context)) ...[
+                  Row(
+                    children: [
+                      mobileCard(
                         'assets/images/calendar.png',
                         'Hybrid Solution',
                         'สร้างคอร์ส Hybrid ของคุณ',
-                        true,
+                        'left',
                         MyCourseHybridPage(
                           tutorId: auth?.uid ?? "",
-                        )),
-                    mobileCard(
+                        ),
+                      ),
+                      mobileCard(
                         'assets/images/graph.png',
                         'การใช้งาน',
                         'ดูรายการค่าใช้จ่ายคอร์สสอนสด',
-                        false,
-                        const SolveFundPage()),
-                  ],
-                ),
-                if (!Responsive.isMobile(context))
+                        'right',
+                        const SolveFundPage(),
+                      ),
+                    ],
+                  ),
+                ],
+                if (Responsive.isMobileLandscape(context)) ...[
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/calendar.png',
+                        'Hybrid',
+                        'สร้างคอร์ส Hybrid ของคุณ',
+                        'tightLeft',
+                        MyCourseHybridPage(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                      mobileCard(
+                        'assets/images/graph.png',
+                        'การใช้งาน',
+                        'ดูรายการค่าใช้จ่ายคอร์สสอนสด',
+                        'tight',
+                        const SolveFundPage(),
+                      ),
+                      mobileCard(
+                        'assets/images/menu_my_course.png',
+                        'คอร์สสอนสด',
+                        'เพิ่มชีท นักเรียน จัดตารางสอน',
+                        'tight',
+                        MyCourseLivePage(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                      mobileCard(
+                        'assets/images/menu_create_sheet.png',
+                        'สร้างชีท',
+                        'อัปโหลดเอกสารประกอบการสอน',
+                        'tight',
+                        MyDocumentPage(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                      mobileCard(
+                        'assets/images/menu_qa.png',
+                        'ตอบคำถาม',
+                        'อธิบายนักเรียนด้วยนวัตกรรม',
+                        'tightRight',
+                        const MaintenancePage(),
+                      ),
+                    ],
+                  ),
+                ],
+                if (Responsive.isMobile(context)) ...[
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/menu_my_course.png',
+                        'สร้างคอร์สสอนสด',
+                        'เพิ่มชีท เพิ่มนักเรียน จัดตารางสอน และรอสอนได้เลย',
+                        'left',
+                        MyCourseLivePage(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                      mobileCard(
+                        'assets/images/menu_create_sheet.png',
+                        'สร้างชีท',
+                        'อัปโหลดเอกสารประกอบการสอน',
+                        'right',
+                        MyDocumentPage(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/menu_qa.png',
+                        'ตอบคำถามนักเรียน',
+                        'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
+                        'left',
+                        const MaintenancePage(),
+                      ),
+                    ],
+                  ),
+                ],
+                if (Responsive.isTablet(context)) ...[
                   GridView.count(
                     shrinkWrap: true,
                     primary: false,
                     padding: const EdgeInsets.all(30),
                     crossAxisSpacing: 30,
                     mainAxisSpacing: 30,
-                    crossAxisCount: Sizer(context).w <= 600 ? 1 : 3,
+                    crossAxisCount: 3,
                     children: <Widget>[
                       // gridCard(
                       //   context,
@@ -152,14 +238,15 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
                       // ),
                     ],
                   ),
-                if (Responsive.isMobile(context))
+                ],
+                if (Responsive.isDesktop(context)) ...[
                   Row(
                     children: [
                       mobileCard(
                         'assets/images/menu_my_course.png',
                         'สร้างคอร์สสอนสด',
                         'เพิ่มชีท เพิ่มนักเรียน จัดตารางสอน และรอสอนได้เลย',
-                        true,
+                        'left',
                         MyCourseLivePage(
                           tutorId: auth?.uid ?? "",
                         ),
@@ -168,25 +255,24 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
                         'assets/images/menu_create_sheet.png',
                         'สร้างชีท',
                         'อัปโหลดเอกสารประกอบการสอน',
-                        false,
+                        'mid',
                         MyDocumentPage(
                           tutorId: auth?.uid ?? "",
                         ),
                       ),
-                    ],
-                  ),
-                if (Responsive.isMobile(context))
-                  Row(
-                    children: [
                       mobileCard(
-                          'assets/images/menu_qa.png',
-                          'ตอบคำถามนักเรียน',
-                          'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
-                          true,
-                          const MaintenancePage()),
+                        'assets/images/menu_qa.png',
+                        'ตอบคำถามนักเรียน',
+                        'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
+                        'right',
+                        const MaintenancePage(),
+                      ),
                     ],
                   ),
-                const SizedBox(height: 70),
+                ],
+                if (!Responsive.isMobileLandscape(context) &&
+                    !Responsive.isDesktop(context))
+                  const SizedBox(height: 70),
               ],
             ),
           ),
@@ -196,16 +282,30 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
   }
 
   Widget mobileCard(
-      String img, String title, String desc, bool left, Widget link) {
+      String img, String title, String desc, String position, Widget link) {
+    EdgeInsets cardPosition;
+    if (position == 'left') {
+      cardPosition = const EdgeInsets.fromLTRB(30, 25, 15, 0);
+    } else if (position == 'right') {
+      cardPosition = const EdgeInsets.fromLTRB(15, 25, 30, 0);
+    } else if (position == 'mid') {
+      cardPosition = const EdgeInsets.fromLTRB(15, 25, 15, 0);
+    } else if (position == 'tight') {
+      cardPosition = const EdgeInsets.fromLTRB(7, 20, 7, 0);
+    } else if (position == 'tightLeft') {
+      cardPosition = const EdgeInsets.fromLTRB(14, 20, 7, 0);
+    } else if (position == 'tightRight') {
+      cardPosition = const EdgeInsets.fromLTRB(7, 20, 14, 0);
+    } else {
+      cardPosition = const EdgeInsets.fromLTRB(15, 25, 15, 0);
+    }
     return Expanded(
       child: Container(
-        height: Responsive.isMobile(context) ? 200 : 230,
-        margin: left
-            ? const EdgeInsets.fromLTRB(30, 30, 15, 0)
-            : const EdgeInsets.fromLTRB(15, 30, 30, 0),
-        padding: Responsive.isMobile(context)
-            ? const EdgeInsets.all(15)
-            : const EdgeInsets.all(30),
+        height: Responsive.isTablet(context) ? 230 : 185,
+        margin: cardPosition,
+        padding: Responsive.isTablet(context)
+            ? const EdgeInsets.all(30)
+            : const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
@@ -231,12 +331,11 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: SizedBox(
-                  child: Image.asset(
-                    img,
-                    fit: BoxFit.contain,
-                  ),
+              SizedBox(
+                height: 60,
+                child: Image.asset(
+                  img,
+                  fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(height: 20),

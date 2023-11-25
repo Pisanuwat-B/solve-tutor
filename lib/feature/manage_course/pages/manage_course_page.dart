@@ -6,6 +6,8 @@ import 'package:solve_tutor/feature/manage_course/pages/manage_live_course_page.
 import 'package:solve_tutor/feature/manage_course/pages/manage_market_course_page.dart';
 import 'package:solve_tutor/widgets/sizer.dart';
 
+import '../../live_classroom/utils/responsive.dart';
+
 class ManageCoursePage extends StatefulWidget {
   const ManageCoursePage({super.key});
 
@@ -40,27 +42,66 @@ class _ManageCoursePageState extends State<ManageCoursePage>
           child: Builder(builder: (context) {
             return Column(
               children: <Widget>[
-                const SizedBox(height: 20),
-                SizedBox(
-                    width: 110,
-                    height: 50,
-                    child: Image.asset('assets/images/big_solve_logo.png')),
-                const Text(
-                  "เทคโนโลยีใหม่ในการสอนออนไลน์",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                if (Responsive.isMobile(context) ||
+                    Responsive.isTablet(context)) ...[
+                  const SizedBox(height: 20),
+                  SizedBox(
+                      width: 110,
+                      height: 50,
+                      child: Image.asset('assets/images/big_solve_logo.png')),
+                  const Text(
+                    "เทคโนโลยีใหม่ในการสอนออนไลน์",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const Text(
-                  "เปลี่ยนวิธีการสอนออนไลน์แบบเดิม ด้วยการสอนผ่านแอป SOLVE\nให้นักเรียนของคุณสามารถเรียนได้จากทุกที่ผ่านมือถือ หรือ Tablet",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: appTextSecondaryColor,
+                  const Text(
+                    "เปลี่ยนวิธีการสอนออนไลน์แบบเดิม ด้วยการสอนผ่านแอป SOLVE\nให้นักเรียนของคุณสามารถเรียนได้จากทุกที่ผ่านมือถือ หรือ Tablet",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: appTextSecondaryColor,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
+                  const SizedBox(height: 10),
+                ],
+                if (Responsive.isDesktop(context)) ...[
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 32.0),
+                        child: SizedBox(
+                            width: 110,
+                            height: 50,
+                            child: Image.asset(
+                                'assets/images/big_solve_logo.png')),
+                      ),
+                      const Column(
+                        children: [
+                          Text(
+                            "เทคโนโลยีใหม่ในการสอนออนไลน์",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            "เปลี่ยนวิธีการสอนออนไลน์แบบเดิม ด้วยการสอนผ่านแอป SOLVE\nให้นักเรียนของคุณสามารถเรียนได้จากทุกที่ผ่านมือถือ หรือ Tablet",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: appTextSecondaryColor,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 10),
+                        ],
+                      ),
+                    ],
+                  )
+                ],
                 Container(
                   constraints: const BoxConstraints.expand(height: 80),
                   decoration: const BoxDecoration(

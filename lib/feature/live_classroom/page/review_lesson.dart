@@ -555,9 +555,9 @@ class _ReviewLessonState extends State<ReviewLesson>
                 if (solveStopwatch.elapsed.inMilliseconds >=
                     eraseAction['points'][movingIndex]['time']) {
                   setState(() {
-                    _replayEraserPoints[_tutorCurrentPage] = Offset(
+                    _replayEraserPoints[_tutorCurrentPage] = scaleOffset(Offset(
                         eraseAction['points'][movingIndex]['x'],
-                        eraseAction['points'][movingIndex]['y']);
+                        eraseAction['points'][movingIndex]['y']));
                   });
                   movingIndex++;
                 }
@@ -580,8 +580,9 @@ class _ReviewLessonState extends State<ReviewLesson>
             setState(() {
               try {
                 setState(() {
-                  pointStack.removeRange(
-                      eraseAction['prev'], eraseAction['next']);
+                  var start = eraseAction['prev'].clamp(0, pointStack.length);
+                  var end = eraseAction['next'].clamp(start, pointStack.length);
+                  pointStack.removeRange(start, end);
                 });
               } catch (e) {
                 if (e is RangeError) {
@@ -639,14 +640,16 @@ class _ReviewLessonState extends State<ReviewLesson>
           if (eraseAction['action'] == 'erase') {
             List<SolvepadStroke?> pointStack =
                 _replayPenPoints[_tutorCurrentPage];
-            if (eraseAction['mode'] == "DrawingMode.pen") {
+            if (eraseAction['mode'] == 'pen') {
               pointStack = _replayPenPoints[_tutorCurrentPage];
             } // erase pen
-            else if (eraseAction['mode'] == "DrawingMode.highlighter") {
+            else if (eraseAction['mode'] == 'high') {
               pointStack = _replayHighlighterPoints[_tutorCurrentPage];
             } // erase high
             setState(() {
-              pointStack.removeRange(eraseAction['prev'], eraseAction['next']);
+              var start = eraseAction['prev'].clamp(0, pointStack.length);
+              var end = eraseAction['next'].clamp(start, pointStack.length);
+              pointStack.removeRange(start, end);
             });
           } // erase
         }
@@ -1045,8 +1048,12 @@ class _ReviewLessonState extends State<ReviewLesson>
         double solvepadHeight = constraints.maxHeight;
         currentScrollX = (-1 * solvepadWidth);
         if (mySolvepadSize.width != solvepadWidth) {
-          mySolvepadSize = Size(solvepadWidth, solvepadHeight);
-          initSolvepadScaling();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              mySolvepadSize = Size(solvepadWidth, solvepadHeight);
+              initSolvepadScaling();
+            });
+          });
         }
         return PageView.builder(
           onPageChanged: _onPageViewChange,

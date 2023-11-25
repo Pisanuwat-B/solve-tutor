@@ -33,198 +33,114 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: Responsive.isMobile(context) ? 200 : 230,
-                        margin: const EdgeInsets.fromLTRB(30, 30, 15, 0),
-                        padding: Responsive.isMobile(context)
-                            ? const EdgeInsets.all(15)
-                            : const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              spreadRadius: 3,
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MaintenancePage(),
-                              ),
-                            );
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: SizedBox(
-                                  child: Image.asset(
-                                    "assets/images/add-income.png",
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            "ภาพรวม",
-                                            style: TextStyle(
-                                              color: appTextPrimaryColor,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize:
-                                                  Responsive.isMobile(context)
-                                                      ? 14
-                                                      : 16,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            "ดูคอร์สขายดี, รายได้ของคุณ, จำนวนนักเรียนในคอร์ส, รีวิว, และคะแนนของคุณ",
-                                            style: TextStyle(
-                                              color: appTextSecondaryColor,
-                                              fontSize:
-                                                  Responsive.isMobile(context)
-                                                      ? 13
-                                                      : 14,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                if (!Responsive.isMobileLandscape(context)) ...[
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/add-income.png',
+                        'ภาพรวม',
+                        'ดูคอร์สขายดี, รายได้ของคุณ, จำนวนนักเรียนในคอร์ส, รีวิว, และคะแนนของคุณ',
+                        'left',
+                        const MaintenancePage(),
+                      ),
+                      mobileCard(
+                        'assets/images/withdraw-money.png',
+                        'ถอนเงิน',
+                        'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
+                        'right',
+                        const MaintenancePage(),
+                      ),
+                    ],
+                  ),
+                ],
+                if (Responsive.isMobileLandscape(context)) ...[
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/add-income.png',
+                        'ภาพรวม',
+                        'ดูคอร์ส, รายได้, รีวิว, และอื่นๆ',
+                        'tightLeft',
+                        const MaintenancePage(),
+                      ),
+                      mobileCard(
+                        'assets/images/withdraw-money.png',
+                        'ถอนเงิน',
+                        'จัดการ Credits รายได้, ยอดเงิน',
+                        'tight',
+                        const MaintenancePage(),
+                      ),
+                      mobileCard(
+                        'assets/images/menu_my_course.png',
+                        'Solve course',
+                        'สร้างคอร์สใน Marketplace',
+                        'tight',
+                        MyCourseVDOPage(
+                          tutorId: auth?.uid ?? "",
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: Responsive.isMobile(context) ? 200 : 230,
-                        margin: const EdgeInsets.fromLTRB(15, 30, 30, 0),
-                        padding: Responsive.isMobile(context)
-                            ? const EdgeInsets.all(15)
-                            : const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              spreadRadius: 3,
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MaintenancePage(),
-                              ),
-                            );
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: SizedBox(
-                                  child: Image.asset(
-                                    "assets/images/withdraw-money.png",
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            "ถอนเงิน",
-                                            style: TextStyle(
-                                              color: appTextPrimaryColor,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize:
-                                                  Responsive.isMobile(context)
-                                                      ? 14
-                                                      : 16,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            "จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ",
-                                            style: TextStyle(
-                                              color: appTextSecondaryColor,
-                                              fontSize:
-                                                  Responsive.isMobile(context)
-                                                      ? 13
-                                                      : 16,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                      mobileCard(
+                        'assets/images/menu_create_sheet.png',
+                        'สร้างชีท',
+                        'อัปโหลดเอกสารประกอบการสอน',
+                        'tight',
+                        MyDocumentPage(
+                          tutorId: auth?.uid ?? "",
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                if (!Responsive.isMobile(context))
+                      mobileCard(
+                        'assets/images/menu_qa.png',
+                        'ตอบคำถาม',
+                        'อธิบายนักเรียน',
+                        'tightRight',
+                        const MaintenancePage(),
+                      ),
+                    ],
+                  ),
+                ],
+                if (Responsive.isMobile(context)) ...[
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/menu_my_course.png',
+                        'คอร์ส Solvepad',
+                        'สร้างคอร์สเพื่อลงขายใน Marketplace',
+                        'left',
+                        MyCourseVDOPage(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                      mobileCard(
+                        'assets/images/menu_create_sheet.png',
+                        'สร้างชีท',
+                        'อัปโหลดเอกสารประกอบการสอน',
+                        'right',
+                        MyDocumentPage(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/menu_qa.png',
+                        'ตอบคำถามนักเรียน',
+                        'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
+                        'left',
+                        const MaintenancePage(),
+                      ),
+                    ],
+                  ),
+                ],
+                if (Responsive.isTablet(context)) ...[
                   GridView.count(
                     shrinkWrap: true,
                     primary: false,
                     padding: const EdgeInsets.all(30),
                     crossAxisSpacing: 30,
                     mainAxisSpacing: 30,
-                    crossAxisCount: Sizer(context).w <= 600 ? 1 : 3,
+                    crossAxisCount: 3,
                     children: <Widget>[
                       gridCard(
                         context,
@@ -273,14 +189,15 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                       ),
                     ],
                   ),
-                if (Responsive.isMobile(context))
+                ],
+                if (Responsive.isDesktop(context)) ...[
                   Row(
                     children: [
                       mobileCard(
                         'assets/images/menu_my_course.png',
                         'สร้างคอร์สด้วย Solvepad',
                         'สร้างคอร์สเพื่อลงขายใน Marketplace',
-                        true,
+                        'left',
                         MyCourseVDOPage(
                           tutorId: auth?.uid ?? "",
                         ),
@@ -289,25 +206,24 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                         'assets/images/menu_create_sheet.png',
                         'สร้างชีท',
                         'อัปโหลดเอกสารประกอบการสอน',
-                        false,
+                        'mid',
                         MyDocumentPage(
                           tutorId: auth?.uid ?? "",
                         ),
                       ),
-                    ],
-                  ),
-                if (Responsive.isMobile(context))
-                  Row(
-                    children: [
                       mobileCard(
-                          'assets/images/menu_qa.png',
-                          'ตอบคำถามนักเรียน',
-                          'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
-                          true,
-                          HomeAudioPage()),
+                        'assets/images/menu_qa.png',
+                        'ตอบคำถามนักเรียน',
+                        'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
+                        'right',
+                        const MaintenancePage(),
+                      ),
                     ],
                   ),
-                const SizedBox(height: 70),
+                ],
+                if (!Responsive.isMobileLandscape(context) &&
+                    !Responsive.isDesktop(context))
+                  const SizedBox(height: 70),
               ],
             ),
           ),
@@ -317,16 +233,30 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
   }
 
   Widget mobileCard(
-      String img, String title, String desc, bool left, Widget link) {
+      String img, String title, String desc, String position, Widget link) {
+    EdgeInsets cardPosition;
+    if (position == 'left') {
+      cardPosition = const EdgeInsets.fromLTRB(30, 25, 15, 0);
+    } else if (position == 'right') {
+      cardPosition = const EdgeInsets.fromLTRB(15, 25, 30, 0);
+    } else if (position == 'mid') {
+      cardPosition = const EdgeInsets.fromLTRB(15, 25, 15, 0);
+    } else if (position == 'tight') {
+      cardPosition = const EdgeInsets.fromLTRB(7, 20, 7, 0);
+    } else if (position == 'tightLeft') {
+      cardPosition = const EdgeInsets.fromLTRB(14, 20, 7, 0);
+    } else if (position == 'tightRight') {
+      cardPosition = const EdgeInsets.fromLTRB(7, 20, 14, 0);
+    } else {
+      cardPosition = const EdgeInsets.fromLTRB(15, 25, 15, 0);
+    }
     return Expanded(
       child: Container(
-        height: Responsive.isMobile(context) ? 200 : 230,
-        margin: left
-            ? const EdgeInsets.fromLTRB(30, 30, 15, 0)
-            : const EdgeInsets.fromLTRB(15, 30, 30, 0),
-        padding: Responsive.isMobile(context)
-            ? const EdgeInsets.all(15)
-            : const EdgeInsets.all(30),
+        height: Responsive.isTablet(context) ? 230 : 185,
+        margin: cardPosition,
+        padding: Responsive.isTablet(context)
+            ? const EdgeInsets.all(30)
+            : const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
@@ -352,12 +282,11 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: SizedBox(
-                  child: Image.asset(
-                    img,
-                    fit: BoxFit.contain,
-                  ),
+              SizedBox(
+                height: 60,
+                child: Image.asset(
+                  img,
+                  fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(height: 20),

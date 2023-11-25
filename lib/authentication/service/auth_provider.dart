@@ -52,6 +52,8 @@ class AuthProvider extends ChangeNotifier {
       if (walletFirebase.exists) {
         wallet = WalletModel.fromJson(walletFirebase.data()!);
         notifyListeners();
+      }else{
+        await updateWallet();
       }
     });
   }

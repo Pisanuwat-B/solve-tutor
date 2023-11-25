@@ -15,6 +15,7 @@ import 'package:solve_tutor/feature/calendar/pages/utils.dart';
 import 'package:solve_tutor/feature/calendar/pages/waiting_join_room.dart';
 import 'package:solve_tutor/feature/calendar/widgets/format_date.dart';
 import 'package:solve_tutor/feature/calendar/widgets/sizebox.dart';
+import 'package:solve_tutor/feature/calendar/widgets/widgets.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../class/pages/class_list_page.dart';
@@ -1792,6 +1793,7 @@ class _CourseLiveCalendarState extends State<CourseLiveCalendar>
         ),
         const SizedBox(),
         // Text('status: publish'),
+        showCourseTutor.courseType == 'live' ? solveIcon() : HybridSolveIcon(),
       ],
     );
   }

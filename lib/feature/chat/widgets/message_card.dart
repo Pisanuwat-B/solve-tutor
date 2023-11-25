@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
-import 'package:gallery_saver/gallery_saver.dart';
+import 'package:gallery_saver_updated/gallery_saver.dart';
 import 'package:provider/provider.dart';
 import 'package:solve_tutor/authentication/service/auth_provider.dart';
 import 'package:solve_tutor/constants/theme.dart';

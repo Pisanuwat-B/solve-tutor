@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 
 class Responsive extends StatelessWidget {
@@ -12,18 +14,19 @@ class Responsive extends StatelessWidget {
     required this.desktop,
   }) : super(key: key);
 
-// This size work fine on my design, maybe you need some customization depends on your design
-
   // This isMobile, isTablet, isDesktop help us later
   static bool isMobile(BuildContext context) =>
-      MediaQuery.of(context).size.width < 650;
+      MediaQuery.of(context).size.width < 650 &&
+      MediaQuery.of(context).orientation == Orientation.portrait;
 
   static bool isMobileLandscape(BuildContext context) =>
-      MediaQuery.of(context).size.width < 850;
+      MediaQuery.of(context).size.width < 850 &&
+      MediaQuery.of(context).orientation == Orientation.landscape;
 
   static bool isTablet(BuildContext context) =>
       MediaQuery.of(context).size.width < 1100 &&
-      MediaQuery.of(context).size.width >= 650;
+      MediaQuery.of(context).size.width >= 650 &&
+      MediaQuery.of(context).orientation == Orientation.portrait;
 
   static bool isDesktop(BuildContext context) =>
       MediaQuery.of(context).size.width >= 1100;
@@ -32,20 +35,20 @@ class Responsive extends StatelessWidget {
   Widget build(BuildContext context) {
     final Size _size = MediaQuery.of(context).size;
     // If our width is more than 1100 then we consider it a desktop
-    print('size = $_size');
+    log('size = $_size');
 
     if (_size.width >= 1100) {
-      print("Size Desktop");
+      log("Size Desktop");
       return desktop;
     }
     // If width it less then 1100 and more then 850 we consider it as tablet
     else if (_size.width >= 650 && tablet != null) {
-      print("Size Tablet");
+      log("Size Tablet");
       return tablet!;
     }
     // Or less then that we called it mobile
     else {
-      print("Size Mobile");
+      log("Size Mobile");
       return mobile;
     }
   }

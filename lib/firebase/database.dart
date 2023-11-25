@@ -48,6 +48,8 @@ class FirebaseService {
     String localVoicePath = '${tempDirectory.path}/tau_file.mp4';
     File voiceFile = File(localVoicePath);
 
+    log('file status :${await solvepadFile.exists()},${await voiceFile.exists()}');
+    // check record next.
     if (!(await solvepadFile.exists() || await voiceFile.exists())) {
       throw Exception("File does not exist");
     } else {
