@@ -454,7 +454,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         const SizedBox(height: 10),
                         const Text(
-                          'SOLVE Instructor v 0.4.22s',
+                          'SOLVE Instructor v 0.4.23s',
                           style: TextStyle(
                             color: greyColor,
                           ),

@@ -535,6 +535,8 @@ class _CourseDetailsLiveState extends State<CourseDetailsLive> {
                                       ?.add(filterStudent.first.id ?? '');
                                   courseController.courseData?.studentDetails
                                       ?.add(filterStudent.first);
+                                  courseController.findStudentController
+                                      .clear();
                                   setState(() {});
                                   Navigator.pop(context);
                                 } else {

@@ -25,9 +25,9 @@ Future<void> showCloseDialog(
         elevation: 0,
         backgroundColor: CustomColors.whitePrimary,
         child: SizedBox(
-          width: Responsive.isMobile(context)
-              ? MediaQuery.of(context).size.width * 0.65
-              : MediaQuery.of(context).size.width * 0.5,
+          width: Responsive.isDesktop(context)
+              ? MediaQuery.of(context).size.width * 0.5
+              : MediaQuery.of(context).size.width * 0.65,
           child: Padding(
             padding: const EdgeInsets.all(32.0),
             child: Column(
