@@ -77,7 +77,7 @@ class _CourseDetailsState extends State<CourseDetails> {
                       ],
                       if (courseController.courseData?.courseType == 'pad') ...[
                         Row(
-                          children: [iconSolvPad()],
+                          children: [iconSolvePad()],
                         )
                       ],
                       S.h(20.0),

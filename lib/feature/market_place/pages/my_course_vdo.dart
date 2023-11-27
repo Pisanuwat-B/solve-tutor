@@ -410,7 +410,7 @@ class _MyCourseVDOPageState extends State<MyCourseVDOPage> {
                           ],
                           if (courseModel.courseType == 'pad') ...[
                             Row(
-                              children: [iconSolvPad()],
+                              children: [iconSolvePad()],
                             )
                           ],
                           Row(

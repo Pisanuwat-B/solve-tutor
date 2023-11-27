@@ -349,7 +349,7 @@ class _MyCourseHybridPageState extends State<MyCourseHybridPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          HybridSolveIcon(),
+                          hybridSolveIcon(),
                           Row(
                             children: [
                               _tagType(

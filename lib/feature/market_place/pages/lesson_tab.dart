@@ -103,7 +103,7 @@ class _LessonTabState extends State<LessonTab> {
               ],
               if (courseController.courseData?.courseType == 'pad') ...[
                 Row(
-                  children: [iconSolvPad()],
+                  children: [iconSolvePad()],
                 )
               ],
               S.w(10),

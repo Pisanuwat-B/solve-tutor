@@ -753,7 +753,7 @@ class _VideoLessonTabState extends State<VideoLessonTab> {
               ],
               if (courseController.courseData?.courseType == 'pad') ...[
                 Row(
-                  children: [iconSolvPad()],
+                  children: [iconSolvePad()],
                 )
               ],
               S.w(10),

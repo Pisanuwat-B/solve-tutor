@@ -1793,7 +1793,7 @@ class _CourseLiveCalendarState extends State<CourseLiveCalendar>
         ),
         const SizedBox(),
         // Text('status: publish'),
-        showCourseTutor.courseType == 'live' ? solveIcon() : HybridSolveIcon(),
+        showCourseTutor.courseType == 'live' ? solveIcon() : hybridSolveIcon(),
       ],
     );
   }
