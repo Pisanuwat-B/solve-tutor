@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:solve_tutor/authentication/models/user_model.dart';
@@ -17,8 +18,8 @@ class AuthProvider extends ChangeNotifier {
   String? uid;
   bool isLoading = true;
   getSelfInfo() async {
-    // log("getSelfInfo");
     uid = firebaseAuth.currentUser?.uid ?? "";
+    DocumentReference userRef = firebaseFirestore.collection('users').doc(uid);
     await firebaseFirestore
         .collection('users')
         .doc(uid)
@@ -26,6 +27,18 @@ class AuthProvider extends ChangeNotifier {
         .then((userFirebase) async {
       if (userFirebase.exists) {
         user = UserModel.fromJson(userFirebase.data()!);
+
+        String? currentPushToken = userFirebase.data()?['push_token'];
+        if (currentPushToken == null || currentPushToken.isEmpty) {
+          log('getSelfInfo: current token empty');
+          var pushToken = await getFCMToken();
+          if (pushToken != null && pushToken.isNotEmpty) {
+            log('getSelfInfo: have pushToken parameter');
+            log(pushToken);
+            await userRef.update({'push_token': pushToken});
+            log('successfully added push token');
+          }
+        }
         // await getFirebaseMessagingToken();
         //for setting user status to active
         // updateActiveStatus(true);
@@ -42,6 +55,20 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<String?> getFCMToken() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    NotificationSettings settings = await messaging.requestPermission();
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      log('User granted permission');
+    } else if (settings.authorizationStatus ==
+        AuthorizationStatus.provisional) {
+      log('User granted provisional permission');
+    } else {
+      log('User declined or has not accepted permission');
+    }
+    return await messaging.getToken();
+  }
+
   getWallet() async {
     uid = firebaseAuth.currentUser?.uid ?? "";
     await firebaseFirestore
@@ -52,7 +79,7 @@ class AuthProvider extends ChangeNotifier {
       if (walletFirebase.exists) {
         wallet = WalletModel.fromJson(walletFirebase.data()!);
         notifyListeners();
-      }else{
+      } else {
         await updateWallet();
       }
     });

@@ -733,9 +733,9 @@ class _RecordCourseState extends State<RecordCourse> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
-        _transformationController[page].value = Matrix4.identity()
-          ..translate(action['scrollX'] / 2, action['scrollY'])
-          ..scale(action['scale']);
+        // _transformationController[page].value = Matrix4.identity()
+        //   ..translate(action['scrollX'] / 2, action['scrollY'])
+        //   ..scale(action['scale']);
         break;
       case 'change-page':
         _pageController.animateToPage(

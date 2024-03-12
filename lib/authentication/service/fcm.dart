@@ -21,44 +21,42 @@ class FCM {
       provisional: false,
     );
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      foregroundNotification(context);
-      backgroundNotification(context);
-      terminateNotification(context);
+      if (context.mounted) {
+        foregroundNotification(context);
+        backgroundNotification(context);
+        terminateNotification(context);
+      }
     }
-    final token = firebaseMessaging
-        .getToken()
-        .then((value) => print("FCM Token : $value"));
+    final token =
+        firebaseMessaging.getToken().then((value) => log("FCM Token : $value"));
   }
 
   //ระหว่างเปิดแอป
   foregroundNotification(BuildContext context) {
-    FirebaseMessaging.onMessage.listen((event) {
-      print("foregroundNotification");
+    FirebaseMessaging.onMessage.listen((message) {
+      log("Foreground-Noti: ${message.notification?.body}");
       if (Platform.isIOS) {
-        print("in ios");
-        log("message notification");
+        log("IOS-noti");
       } else {
-        print("in android");
-        log("message notification");
+        log("Android-noti");
       }
     });
   }
 
   //ปิดแอป แต่ไม่เคลียร์แอป
   backgroundNotification(BuildContext context) {
-    FirebaseMessaging.onMessageOpenedApp.listen((event) {
-      print("backgroundNotification");
-      // log("message notification");
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      log("Background-Noti: ${message.notification?.body}");
     });
   }
 
   //ปิดแอปแล้วเปิดมาใหม่
   terminateNotification(BuildContext context) async {
-    print("terminateNotification");
+    log("Terminate-Noti:");
     RemoteMessage? initialMessage =
         await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
-      // log("message notification");
+      log("Terminate-Noti: $initialMessage");
     }
   }
 

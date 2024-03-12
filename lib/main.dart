@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,11 +12,16 @@ import 'package:solve_tutor/constants/theme.dart';
 import 'package:solve_tutor/splash_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  log("Background-Noti: ${message.notification?.body}");
+}
+
 Future<void> main() async {
   initializeDateFormatting();
   WidgetsFlutterBinding.ensureInitialized();
-  // initializeDateFormatting();
+
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

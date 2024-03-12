@@ -5,6 +5,8 @@ import 'package:solve_tutor/auth.dart';
 import 'package:solve_tutor/authentication/service/auth_provider.dart';
 import 'package:solve_tutor/constants/theme.dart';
 
+import 'authentication/service/fcm.dart';
+
 class SplashPage extends StatefulWidget {
   SplashPage({super.key});
 
@@ -13,8 +15,11 @@ class SplashPage extends StatefulWidget {
 }
 
 class SplashPageState extends State<SplashPage> {
+  // final FCM fcm = FCM();
+
   @override
   void initState() {
+    // fcm.setNotification(context);
     auth = Provider.of<AuthProvider>(context, listen: false);
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {

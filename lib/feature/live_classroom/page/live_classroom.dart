@@ -457,7 +457,7 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
   void initWss() {
     channel = WebSocketChannel.connect(
       Uri.parse(
-          'ws://34.143.240.238:3000/${widget.courseId}/${widget.startTime}'),
+          'ws://35.240.204.107:3000/${widget.courseId}/${widget.startTime}'),
     );
 
     channel?.stream.listen((message) {
@@ -1095,8 +1095,8 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
   Future<void> updateMeetingId() async {
     var calendars = courseController.courseData?.calendars;
     int indexToUpdate = calendars!.indexWhere((element) =>
-    element.start?.compareTo(
-        DateTime.fromMillisecondsSinceEpoch(widget.startTime)) ==
+        element.start?.compareTo(
+            DateTime.fromMillisecondsSinceEpoch(widget.startTime)) ==
         0);
 
     if (indexToUpdate != -1) {
@@ -2075,36 +2075,36 @@ class _LiveClassroomSolvepadState extends State<TutorLiveClassroom> {
                     // if (isRecordingOn) {
                     //   showAlertRecordingDialog(context);
                     // } else {
+                    setState(() {
+                      isUploading = true;
+                    });
+                    showCloseDialog(context, () async {
+                      sendMessage(
+                        'EndMeeting',
+                        solveStopwatch.elapsed.inMilliseconds,
+                      );
+                      if (!widget.isMock) {
+                        meeting.end();
+                        closeChanel();
+                        FirebaseFirestore.instance
+                            .collection('course_live')
+                            .doc(widget.courseId)
+                            .update({'currentMeetingCode': ''});
+                        await updateActualTime();
+                        await endSolvepadDataCollection();
+                      }
+                      if (!mounted) return;
+                      Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Nav(),
+                          ),
+                          (route) => false);
+                    }, onCancel: () {
                       setState(() {
-                        isUploading = true;
+                        isUploading = false;
                       });
-                      showCloseDialog(context, () async {
-                        sendMessage(
-                          'EndMeeting',
-                          solveStopwatch.elapsed.inMilliseconds,
-                        );
-                        if (!widget.isMock) {
-                          meeting.end();
-                          closeChanel();
-                          FirebaseFirestore.instance
-                              .collection('course_live')
-                              .doc(widget.courseId)
-                              .update({'currentMeetingCode': ''});
-                          await updateActualTime();
-                          await endSolvepadDataCollection();
-                        }
-                        if (!mounted) return;
-                        Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => Nav(),
-                            ),
-                            (route) => false);
-                      }, onCancel: () {
-                        setState(() {
-                          isUploading = false;
-                        });
-                      });
+                    });
                     // }
                   },
                   child: Container(

@@ -79,6 +79,7 @@ class FirebaseService {
     final event = await collectionRef.doc(solvepadId).get();
     voiceUrl = (event.data() as Map)['voice'];
     var solvepadUrl = (event.data() as Map)['solvepad'];
+    log(solvepadUrl);
     final url = Uri.parse(solvepadUrl);
     final response = await http.get(url);
     await file.writeAsBytes(response.bodyBytes);
