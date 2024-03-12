@@ -13,6 +13,7 @@ import 'package:solve_tutor/splash_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  log("Background-Noti: ${message.data}");
   log("Background-Noti: ${message.notification?.body}");
 }
 
