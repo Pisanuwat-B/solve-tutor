@@ -97,8 +97,15 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
                         'assets/images/menu_qa.png',
                         'ตอบคำถาม',
                         'อธิบายนักเรียนด้วยนวัตกรรม',
-                        'tightRight',
+                        'tight',
                         const MaintenancePage(),
+                      ),
+                      mobileCard(
+                        'assets/images/live4.png',
+                        'ค้นหางานสอน',
+                        'หางานผ่าน SOLVE',
+                        'tightRight',
+                        const ClassListPage(),
                       ),
                     ],
                   ),
@@ -134,6 +141,13 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
                         'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
                         'left',
                         const MaintenancePage(),
+                      ),
+                      mobileCard(
+                        'assets/images/live4.png',
+                        'ค้นหางานสอน',
+                        'หางานผ่าน SOLVE',
+                        'Right',
+                        const ClassListPage(),
                       ),
                     ],
                   ),
@@ -224,6 +238,20 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
                         content:
                             "อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring",
                       ),
+                      gridCard(
+                        context,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ClassListPage(),
+                            ),
+                          );
+                        },
+                        image: 'assets/images/live4.png',
+                        title: "ค้นหางานสอน",
+                        content: "หางานผ่าน SOLVE",
+                      ),
                       // gridCard(
                       //   context,
                       //   onTap: () {
@@ -264,8 +292,15 @@ class _ManageLiveCoursePageState extends State<ManageLiveCoursePage> {
                         'assets/images/menu_qa.png',
                         'ตอบคำถามนักเรียน',
                         'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
-                        'right',
+                        'mid',
                         const MaintenancePage(),
+                      ),
+                      mobileCard(
+                        'assets/images/live4.png',
+                        'ค้นหางานสอน',
+                        'หางานผ่าน SOLVE',
+                        'right',
+                        const ClassListPage(),
                       ),
                     ],
                   ),
