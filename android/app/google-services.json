@@ -126,11 +126,35 @@
       },
       "oauth_client": [
         {
+          "client_id": "770917809768-23qhpo693q7ut62ip4ojfood1trg6hmu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.solve.solve",
+            "certificate_hash": "86b001c8e5f30fee90f616e0456a9d52b5cf39b3"
+          }
+        },
+        {
+          "client_id": "770917809768-6dmaa54j678imobrlg5brqoi0ntsmq46.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.solve.solve",
+            "certificate_hash": "f7c17b89add73f113690d87169505a6afe95d3f0"
+          }
+        },
+        {
           "client_id": "770917809768-8bfgqd8rp3a5meou524047g7vn5tcfc8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.app.solve.solve",
             "certificate_hash": "011ee6039bc11e1fdc4b5ab2b9cb9d26294d0dfd"
+          }
+        },
+        {
+          "client_id": "770917809768-c5bg8qndgvlj7no63lpcqiaiu5nm4f1q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.solve.solve",
+            "certificate_hash": "8d90f9b1ef342284ffd0b4fcab2ee260cdcd032b"
           }
         },
         {
@@ -230,6 +254,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "770917809768-0sto7cd1grdv8m9fcbj177q0tiblvd1h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.solve_tutor",
+            "certificate_hash": "8d90f9b1ef342284ffd0b4fcab2ee260cdcd032b"
+          }
+        },
+        {
           "client_id": "770917809768-h4mb408e535947o1fjlk8qmgonu9rpin.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -273,6 +305,70 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "770917809768-4tdgcta3v62jgi6s89u0dt3tpk0p0mh5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.tutor",
+            "certificate_hash": "edb97788353b8a4509142800ae604abcb25948ba"
+          }
+        },
+        {
+          "client_id": "770917809768-5glj7bipm6mfg78qv98qco7r274ft9ib.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.tutor",
+            "certificate_hash": "f7c17b89add73f113690d87169505a6afe95d3f0"
+          }
+        },
+        {
+          "client_id": "770917809768-7m30gujmfrniqgdtpu3uhaidhaqr652p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.tutor",
+            "certificate_hash": "84656ed7324dc9478a07f20b99a52b04f21095d6"
+          }
+        },
+        {
+          "client_id": "770917809768-aolrn2dk5uitu5fea3b66p4vsqr4ca7l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.tutor",
+            "certificate_hash": "0f786a5de411749f584e94970f3664483fe56e25"
+          }
+        },
+        {
+          "client_id": "770917809768-bnsoo8om7l9hph5u11rm5sa8qfvcrj6u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.tutor",
+            "certificate_hash": "34fdb7d6bd60c7329d6b349c9abade9f07a2acbd"
+          }
+        },
+        {
+          "client_id": "770917809768-ei6b0mq69rp6vvevt9da28ujth9n5jk4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.tutor",
+            "certificate_hash": "8d90f9b1ef342284ffd0b4fcab2ee260cdcd032b"
+          }
+        },
+        {
+          "client_id": "770917809768-qnsu2lvg9m1stvhutr7chhqkp4podh9e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.tutor",
+            "certificate_hash": "24c37a75050457ed90762a8d69db4ca6b74c4b7f"
+          }
+        },
+        {
+          "client_id": "770917809768-vth1jksg9abp1mvpng928v6k8iuqhr11.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.solve.tutor",
+            "certificate_hash": "86b001c8e5f30fee90f616e0456a9d52b5cf39b3"
+          }
+        },
         {
           "client_id": "770917809768-u20ra704vk7hnf3hp634ceso5lj5aeol.apps.googleusercontent.com",
           "client_type": 3

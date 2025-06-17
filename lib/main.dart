@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:solve_tutor/constants/state_index.dart';
 import 'package:solve_tutor/constants/theme.dart';
 import 'package:solve_tutor/splash_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:solve_tutor/firebase_options.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   log("Background-Noti: ${message.data}");
@@ -21,7 +23,9 @@ Future<void> main() async {
   initializeDateFormatting();
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

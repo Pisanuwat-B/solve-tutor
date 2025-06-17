@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,10 +25,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -49,9 +43,18 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCHz63pRYXWGV00S4NbY8wuNHC9m9F3TKk',
+    appId: '1:770917809768:web:2119b53885ab898957c5dd',
+    messagingSenderId: '770917809768',
+    projectId: 'solve-f1778',
+    authDomain: 'solve-f1778.firebaseapp.com',
+    storageBucket: 'solve-f1778.appspot.com',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBuzjhNPBaB7jlldGH_kC8GDqrKKliQU8Q',
-    appId: '1:770917809768:android:4d4f53c1fca32b8757c5dd',
+    appId: '1:770917809768:android:800af57a1ff2e10957c5dd',
     messagingSenderId: '770917809768',
     projectId: 'solve-f1778',
     storageBucket: 'solve-f1778.appspot.com',
@@ -59,11 +62,22 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA-XXFVKvmeEesO-iFSbdzrRjwKechPGVE',
+    appId: '1:770917809768:ios:fc19743fbbe06e3957c5dd',
+    messagingSenderId: '770917809768',
+    projectId: 'solve-f1778',
+    storageBucket: 'solve-f1778.appspot.com',
+    androidClientId: '770917809768-0sto7cd1grdv8m9fcbj177q0tiblvd1h.apps.googleusercontent.com',
+    iosClientId: '770917809768-8b1h93hjq8d7gf5ln1ds6qcavm72fq2n.apps.googleusercontent.com',
+    iosBundleId: 'com.solve.tutor',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyA-XXFVKvmeEesO-iFSbdzrRjwKechPGVE',
     appId: '1:770917809768:ios:7e70887855790cef57c5dd',
     messagingSenderId: '770917809768',
     projectId: 'solve-f1778',
     storageBucket: 'solve-f1778.appspot.com',
-    androidClientId: '770917809768-8bfgqd8rp3a5meou524047g7vn5tcfc8.apps.googleusercontent.com',
+    androidClientId: '770917809768-0sto7cd1grdv8m9fcbj177q0tiblvd1h.apps.googleusercontent.com',
     iosClientId: '770917809768-9r1i6hqfj79qi7966fa5qafnq29gb4rh.apps.googleusercontent.com',
     iosBundleId: 'com.solve.solveTutor',
   );
