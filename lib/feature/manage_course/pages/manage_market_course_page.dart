@@ -6,6 +6,7 @@ import 'package:solve_tutor/feature/calendar/pages/my_course_live.dart';
 import 'package:solve_tutor/feature/cheet/pages/my_document.dart';
 import 'package:solve_tutor/feature/class/pages/class_list_page.dart';
 import 'package:solve_tutor/feature/market_place/pages/my_course_vdo.dart';
+import 'package:solve_tutor/feature/payment/pages/solve_fund.dart';
 import 'package:solve_tutor/widgets/sizer.dart';
 
 import '../../live_classroom/utils/responsive.dart';
@@ -47,7 +48,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                         'การเงิน',
                         'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
                         'right',
-                        const MaintenancePage(),
+                        const SolveFundPage(),
                       ),
                     ],
                   ),

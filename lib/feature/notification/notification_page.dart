@@ -30,8 +30,6 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   @override
-  @override
-  @override
   Widget build(BuildContext context) {
     final provider = Provider.of<NotificationProvider>(context);
     final notifications = provider.notifications;
@@ -91,6 +89,7 @@ class _NotificationPageState extends State<NotificationPage> {
                       course: course,
                       lesson: lesson!,
                       studentId: studentId,
+                      questionText: data['questionText'],
                     ),
                   ),
                 );

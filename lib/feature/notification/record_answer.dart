@@ -25,10 +25,7 @@ import '../calendar/model/course_model.dart';
 import '../calendar/widgets/alert_overlay.dart';
 import '../calendar/widgets/alert_snackbar.dart';
 import '../calendar/widgets/sizebox.dart';
-import '../live_classroom/components/close_dialog.dart';
 import '../live_classroom/components/divider.dart';
-import '../live_classroom/components/divider_vertical.dart';
-import '../live_classroom/components/leaderboard.dart';
 import '../live_classroom/components/room_loading_screen.dart';
 import '../live_classroom/solvepad/solve_watch.dart';
 import '../live_classroom/solvepad/solvepad_drawer.dart';
@@ -39,11 +36,13 @@ class RecordAnswer extends StatefulWidget {
   final CourseModel course;
   final Lessons lesson;
   final String studentId;
+  final String questionText;
   const RecordAnswer({
     Key? key,
     required this.lesson,
     required this.course,
     required this.studentId,
+    required this.questionText,
   }) : super(key: key);
 
   @override
@@ -1802,9 +1801,10 @@ class _RecordAnswerState extends State<RecordAnswer> {
                             var courseController =
                             context.read<CourseController>();
                             await writeToFile('solvepad.txt', _data);
+                            final timestamp = DateTime.now().millisecondsSinceEpoch;
                             List uploadUrl = await firebaseService
                                 .uploadMarketSolvepad(
-                                '${widget.course.id!}_${widget.lesson.lessonId.toString()}');
+                                '${widget.course.id!}_${widget.lesson.lessonId.toString()}_$timestamp');
                             String solvepadId =
                             await firebaseService.writeSolvepadData(
                                 uploadUrl[0], uploadUrl[1]);
@@ -1815,6 +1815,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
                               solvepad: solvepadId,
                               tutorId: widget.course.tutorId!,
                               studentId: widget.studentId,
+                              questionText: '',
                             );
                           },
                           context: context,

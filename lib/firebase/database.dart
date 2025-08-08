@@ -142,6 +142,7 @@ class FirebaseService {
     required String solvepad,
     required String tutorId,
     required String studentId,
+    required String questionText,
   }) async {
     try {
       await db.collection('answer_market').add({
@@ -151,6 +152,7 @@ class FirebaseService {
         'solvepad': solvepad,
         'tutorId': tutorId,
         'studentId': studentId,
+        'questionText': questionText,
         'timestamp': FieldValue.serverTimestamp(),
       });
 

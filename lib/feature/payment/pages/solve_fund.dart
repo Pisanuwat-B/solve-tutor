@@ -176,139 +176,139 @@ class _SolveFundPageState extends State<SolveFundPage> {
                     ],
                   ),
                 ),
-                // Container(
-                //   margin: const EdgeInsets.all(15),
-                //   padding: const EdgeInsets.all(16),
-                //   decoration: BoxDecoration(
-                //     borderRadius: BorderRadius.circular(10),
-                //     border: Border.all(
-                //       color: Colors.grey,
-                //     ),
-                //   ),
-                //   child: Column(
-                //     children: [
-                //       const Text(
-                //         'ซื้อเหรียญ',
-                //         textAlign: TextAlign.center,
-                //         style: TextStyle(
-                //           color: Color(0xFF363636),
-                //           fontSize: 22,
-                //           fontWeight: FontWeight.w700,
-                //         ),
-                //       ),
-                //       const SizedBox(height: 16),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 600,
-                //           rate: 90),
-                //       const Divider(thickness: 2),
-                //       const SizedBox(height: 8),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 1200,
-                //           rate: 180),
-                //       const Divider(thickness: 2),
-                //       const SizedBox(height: 8),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 1800,
-                //           rate: 270),
-                //       const Divider(thickness: 2),
-                //       const SizedBox(height: 8),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 2400,
-                //           rate: 360),
-                //       const Divider(thickness: 2),
-                //       const SizedBox(height: 8),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 3000,
-                //           rate: 450),
-                //       const Divider(thickness: 2),
-                //       const SizedBox(height: 8),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 6000,
-                //           rate: 900),
-                //       const Divider(thickness: 2),
-                //       const SizedBox(height: 8),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 9000,
-                //           rate: 1350),
-                //       const Divider(thickness: 2),
-                //       const SizedBox(height: 8),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 12000,
-                //           rate: 1800),
-                //       const Divider(thickness: 2),
-                //       const SizedBox(height: 8),
-                //       ratePointCard(
-                //           context: context,
-                //           uid: authProvider.uid!,
-                //           point: 18000,
-                //           rate: 2700),
-                //     ],
-                //   ),
-                // ),
-                // const SizedBox(height: 10),
-                // Container(
-                //   margin: const EdgeInsets.all(15),
-                //   child: const Column(
-                //     mainAxisSize: MainAxisSize.min,
-                //     mainAxisAlignment: MainAxisAlignment.center,
-                //     crossAxisAlignment: CrossAxisAlignment.start,
-                //     children: [
-                //       Text(
-                //         'เงื่อนไขการใช้บริการ:',
-                //         style: TextStyle(
-                //           color: Color(0xFF363636),
-                //           fontSize: 14,
-                //           fontWeight: FontWeight.w700,
-                //           height: 0.10,
-                //         ),
-                //       ),
-                //       SizedBox(height: 8),
-                //       SizedBox(
-                //         width: double.infinity,
-                //         child: Text.rich(
-                //           TextSpan(
-                //             children: [
-                //               TextSpan(
-                //                 text:
-                //                     'Lorem ipsum dolor sit amet consectetur. Nunc urna aenean lorem arcu dolor vitae amet. Eget dolor elit purus hendrerit. Pretium egestas mattis elit morbi. Imperdiet augue et mattis vehicula tortor. Morbi sed arcu scelerisque arcu ipsum integer eget. Ut massa turpis quis est gravida pulvinar mattis egestas leo. Mattis lacus...',
-                //                 style: TextStyle(
-                //                   color: Color(0xFF878787),
-                //                   fontSize: 14,
-                //                   fontWeight: FontWeight.w400,
-                //                   height: 0,
-                //                 ),
-                //               ),
-                //               TextSpan(
-                //                 text: 'อ่านต่อ',
-                //                 style: TextStyle(
-                //                     color: Color(0xFF878787),
-                //                     fontSize: 14,
-                //                     fontWeight: FontWeight.w700,
-                //                     decoration: TextDecoration.underline),
-                //               ),
-                //             ],
-                //           ),
-                //         ),
-                //       ),
-                //     ],
-                //   ),
-                // ),
+                Container(
+                  margin: const EdgeInsets.all(15),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.grey,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'ซื้อเหรียญ',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF363636),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 600,
+                          rate: 90),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 8),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 1200,
+                          rate: 180),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 8),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 1800,
+                          rate: 270),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 8),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 2400,
+                          rate: 360),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 8),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 3000,
+                          rate: 450),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 8),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 6000,
+                          rate: 900),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 8),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 9000,
+                          rate: 1350),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 8),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 12000,
+                          rate: 1800),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 8),
+                      ratePointCard(
+                          context: context,
+                          uid: authProvider.uid!,
+                          point: 18000,
+                          rate: 2700),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  margin: const EdgeInsets.all(15),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'เงื่อนไขการใช้บริการ:',
+                        style: TextStyle(
+                          color: Color(0xFF363636),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          height: 0.10,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text:
+                                    'Lorem ipsum dolor sit amet consectetur. Nunc urna aenean lorem arcu dolor vitae amet. Eget dolor elit purus hendrerit. Pretium egestas mattis elit morbi. Imperdiet augue et mattis vehicula tortor. Morbi sed arcu scelerisque arcu ipsum integer eget. Ut massa turpis quis est gravida pulvinar mattis egestas leo. Mattis lacus...',
+                                style: TextStyle(
+                                  color: Color(0xFF878787),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  height: 0,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'อ่านต่อ',
+                                style: TextStyle(
+                                    color: Color(0xFF878787),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    decoration: TextDecoration.underline),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
