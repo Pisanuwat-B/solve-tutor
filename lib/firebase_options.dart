@@ -59,12 +59,13 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA-XXFVKvmeEesO-iFSbdzrRjwKechPGVE',
-    appId: '1:770917809768:ios:7e70887855790cef57c5dd',
+    appId: '1:770917809768:ios:fc19743fbbe06e3957c5dd',
     messagingSenderId: '770917809768',
     projectId: 'solve-f1778',
     storageBucket: 'solve-f1778.appspot.com',
-    androidClientId: '770917809768-8bfgqd8rp3a5meou524047g7vn5tcfc8.apps.googleusercontent.com',
-    iosClientId: '770917809768-9r1i6hqfj79qi7966fa5qafnq29gb4rh.apps.googleusercontent.com',
-    iosBundleId: 'com.solve.solveTutor',
+    androidClientId: '770917809768-0sto7cd1grdv8m9fcbj177q0tiblvd1h.apps.googleusercontent.com',
+    iosClientId: '770917809768-8b1h93hjq8d7gf5ln1ds6qcavm72fq2n.apps.googleusercontent.com',
+    iosBundleId: 'com.solve.tutor',
   );
+
 }
