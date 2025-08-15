@@ -11,6 +11,7 @@ import 'package:solve_tutor/widgets/sizer.dart';
 
 import '../../live_classroom/utils/responsive.dart';
 import '../../maintenance/maintenance.dart';
+import '../../payment/pages/earning.dart';
 
 class ManageMarketCoursePage extends StatefulWidget {
   const ManageMarketCoursePage({super.key});
@@ -48,7 +49,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                         'การเงิน',
                         'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
                         'right',
-                        const SolveFundPage(),
+                        const RevenueSummaryPage(),
                       ),
                     ],
                   ),

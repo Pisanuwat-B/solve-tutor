@@ -30,7 +30,7 @@ class LoginPageState extends State<LoginPage> {
       // Dialogs.showProgressBar(context);
       var user = await signInWithGoogle();
       if (user != null) {
-        // log('\nUser: ${user.user}');
+        dev.log('\nUser: ${user.user}');
         // log('\nUserAdditionalInfo: ${user.additionalUserInfo}');
         if (await authProvider!.userExists(user.user!)) {
         } else {
@@ -65,10 +65,10 @@ class LoginPageState extends State<LoginPage> {
   // }
 
   Future<UserCredential?> signInWithGoogle() async {
-    // Optional reachability check – remove if you don’t want it.
     try {
       await InternetAddress.lookup('google.com');
     } catch (_) {
+      dev.log('fail lookup');
       return null;
     }
 
@@ -77,8 +77,7 @@ class LoginPageState extends State<LoginPage> {
     try {
       // 1️⃣ Show the Google-account picker (new 7.x API).
       //    authenticate() throws if the user taps “Cancel”.
-      final GoogleSignInAccount account =
-      await g.authenticate(scopeHint: const ['email']);
+      final GoogleSignInAccount account = await g.authenticate(scopeHint: const ['email']);
 
       // 2️⃣ Tokens are now synchronous.
       final GoogleSignInAuthentication authData = account.authentication;
@@ -92,11 +91,11 @@ class LoginPageState extends State<LoginPage> {
       return FirebaseAuth.instance.signInWithCredential(credential);
     } on GoogleSignInException catch (e) {
       // User cancelled or another G-Sign-In error.
-      // log('Google sign-in error: ${e.code.name} – ${e.description}');
+      dev.log('Google sign-in error: ${e.code.name} – ${e.description}');
       return null;
     } catch (e) {
       // Anything else (network, Firebase).
-      // log('Unexpected sign-in error: $e');
+      dev.log('Unexpected sign-in error: $e');
       return null;
     }
   }
@@ -105,7 +104,6 @@ class LoginPageState extends State<LoginPage> {
     try {
       var auth = await _signInWithApple();
       if (auth!.user != null) {
-        dev.log('\nUser: ${auth!.user}');
         if (await authProvider!.userExists(auth.user!)) {
         } else {
           await authProvider!.createUser(
