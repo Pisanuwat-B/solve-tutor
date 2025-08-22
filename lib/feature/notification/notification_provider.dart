@@ -12,6 +12,7 @@ class NotificationProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get notifications => _notifications;
 
   void listenForNewQuestions(String tutorId) {
+    log('check notification');
     FirebaseFirestore.instance
         .collection('question_market')
         .where('tutorId', isEqualTo: tutorId)
@@ -21,6 +22,7 @@ class NotificationProvider extends ChangeNotifier {
       for (final docChange in snapshot.docChanges) {
         if (docChange.type == DocumentChangeType.added) {
           final data = docChange.doc.data();
+          log(data.toString());
           if (data != null) {
             log('listening to question');
             log(data.toString());

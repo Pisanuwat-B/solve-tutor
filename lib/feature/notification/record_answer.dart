@@ -1815,7 +1815,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
                               solvepad: solvepadId,
                               tutorId: widget.course.tutorId!,
                               studentId: widget.studentId,
-                              questionText: '',
+                              questionText: widget.questionText,
                             );
                           },
                           context: context,
