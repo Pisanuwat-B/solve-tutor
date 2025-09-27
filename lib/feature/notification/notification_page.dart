@@ -8,6 +8,7 @@ import 'package:solve_tutor/feature/notification/question_notification_card.dart
 import 'package:solve_tutor/feature/notification/record_answer.dart';
 import 'package:solve_tutor/widgets/sizer.dart';
 
+import '../../firebase/database.dart';
 import '../calendar/controller/create_course_controller.dart';
 import '../calendar/model/course_model.dart';
 import 'notification_provider.dart';
@@ -20,6 +21,7 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
+  final firebaseService = FirebaseService();
 
   @override
   void initState() {
@@ -65,45 +67,133 @@ class _NotificationPageState extends State<NotificationPage> {
         itemCount: notifications.length,
         itemBuilder: (context, index) {
           final data = notifications[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: InkWell(
-              onTap: () async {
-                final courseId = data['courseId'];
-                final studentId = data['studentId'];
-                final lessonId = int.tryParse(data['lessonId'].toString()) ?? 0;
+          final courseId  = data['courseId'] as String;
+          final studentId = data['studentId'] as String;
+          final lessonId  = int.tryParse('${data['lessonId']}') ?? 0;
 
-                // Get CourseModel from provider
-                final courseController = Provider.of<CourseController>(context, listen: false);
-                final course = await courseController.getCourseById(courseId);
+          final courseNameFuture = firebaseService.getCourseNameCached(courseId);
 
-                final lesson = course.lessons?.firstWhere(
-                      (l) => l.lessonId == lessonId,
-                  orElse: () => Lessons(lessonId: lessonId, lessonName: "Unknown"),
-                );
+          return FutureBuilder<String?>(
+            future: courseNameFuture,
+            builder: (context, snap) {
+              final hasName  = snap.connectionState == ConnectionState.done && snap.hasData;
+              final hasError = snap.hasError;
+              final courseName = snap.data ?? '';
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RecordAnswer(
-                      course: course,
-                      lesson: lesson!,
-                      studentId: studentId,
-                      questionText: data['questionText'],
-                    ),
-                  ),
-                );
-              },
-              child: QuestionNotificationCard(
-                questionText: data['questionText'],
-                studentId: data['studentId'],
-                courseId: data['courseId'],
-                lesson: data['lessonId'],
-              ),
-            ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: InkWell(
+                  onTap: (!hasName || hasError)
+                      ? null // block until loaded (or if error)
+                      : () async {
+                    // also make sure CourseModel is loaded before entering RecordAnswer
+                    final courseController = context.read<CourseController>();
+                    final course = await courseController.getCourseById(courseId);
+
+                    final lesson = course.lessons?.firstWhere(
+                          (l) => l.lessonId == lessonId,
+                      orElse: () => Lessons(lessonId: lessonId, lessonName: "Unknown"),
+                    );
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RecordAnswer(
+                          course: course,
+                          lesson: lesson!,
+                          studentId: studentId,
+                          questionText: courseName, // pass the loaded name
+                        ),
+                      ),
+                    );
+                  },
+                  child: hasError
+                      ? _QuestionCardError(
+                    studentId: studentId,
+                    courseId: courseId,
+                    lesson: lessonId,
+                  )
+                      : hasName
+                      ? QuestionNotificationCard(
+                    questionText: courseName,   // show course name here
+                    studentId: studentId,
+                    courseId: courseId,
+                    lesson: lessonId,
+                  )
+                      : const _QuestionCardSkeleton(), // skeleton while loading
+                ),
+              );
+            },
           );
         },
       ),
+    );
+  }
+}
+
+class _QuestionCardSkeleton extends StatelessWidget {
+  const _QuestionCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          _SkeletonLine(width: 180),
+          SizedBox(height: 8),
+          _SkeletonLine(width: 120),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonLine extends StatelessWidget {
+  const _SkeletonLine({this.width});
+  final double? width;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: 0.6,
+      duration: const Duration(milliseconds: 800),
+      child: Container(
+        height: 14,
+        width: width ?? double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuestionCardError extends StatelessWidget {
+  const _QuestionCardError({
+    required this.studentId,
+    required this.courseId,
+    required this.lesson,
+  });
+
+  final String studentId;
+  final String courseId;
+  final int lesson;
+
+  @override
+  Widget build(BuildContext context) {
+    return QuestionNotificationCard(
+      questionText: 'Unable to load course name',
+      studentId: studentId,
+      courseId: courseId,
+      lesson: lesson,
     );
   }
 }

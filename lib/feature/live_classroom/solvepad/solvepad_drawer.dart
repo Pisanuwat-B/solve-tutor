@@ -222,12 +222,17 @@ class SolvepadDrawerMarketplace extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (int i = 0; i < penPoints.length - 1; i++) {
-      if (penPoints[i]?.offset != null && penPoints[i + 1]?.offset != null) {
-        penPaint.color = penPoints[i]!.color;
-        penPaint.strokeWidth = penPoints[i]!.width;
-        canvas.drawLine(
-            penPoints[i]!.offset, penPoints[i + 1]!.offset, penPaint);
+    final smoothedPen = chaikinSmoothSolvepad(penPoints, iterations: 2);
+    for (int i = 0; i < smoothedPen.length - 1; i++) {
+      final a = smoothedPen[i];
+      final b = smoothedPen[i + 1];
+      if (a?.offset != null && b?.offset != null) {
+        penPaint
+          ..color = a!.color
+          ..strokeWidth = a.width
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round;
+        canvas.drawLine(a.offset, b!.offset, penPaint);
       }
     }
 
@@ -276,6 +281,63 @@ class SolvepadDrawerMarketplace extends CustomPainter {
     }
     canvas.drawCircle(eraserPoint, 10, eraserPaint);
     canvas.drawCircle(eraserPoint, 10, borderPaint);
+  }
+
+  List<SolvepadStroke?> chaikinSmoothSolvepad(
+      List<SolvepadStroke?> pts, {
+        int iterations = 1,
+      }) {
+    List<SolvepadStroke?> current = pts;
+
+    for (int k = 0; k < iterations; k++) {
+      final next = <SolvepadStroke?>[];
+      int i = 0;
+
+      while (i < current.length) {
+        // 1) Preserve separators
+        while (i < current.length && current[i]?.offset == null) {
+          next.add(null);
+          i++;
+        }
+        if (i >= current.length) break;
+
+        // 2) Collect one stroke (until next null)
+        final stroke = <SolvepadStroke>[];
+        while (i < current.length && current[i]?.offset != null) {
+          stroke.add(current[i]!);
+          i++;
+        }
+
+        // 3) Short strokes: pass through
+        if (stroke.length <= 2) {
+          next.addAll(stroke);
+          continue;
+        }
+
+        // 4) Chaikin corner cutting on this stroke
+        next.add(stroke.first); // keep first endpoint
+        for (int j = 0; j < stroke.length - 1; j++) {
+          final a = stroke[j];
+          final b = stroke[j + 1];
+          final p = a.offset;
+          final q = b.offset;
+
+          // New points between a and b
+          final q1 = Offset(0.75 * p.dx + 0.25 * q.dx, 0.75 * p.dy + 0.25 * q.dy);
+          final r1 = Offset(0.25 * p.dx + 0.75 * q.dx, 0.25 * p.dy + 0.75 * q.dy);
+
+          // Policy: inherit color/width from 'a'.
+          // (Or interpolate if you let color/width vary mid-stroke.)
+          next.add(SolvepadStroke(q1, a.color, a.width));
+          next.add(SolvepadStroke(r1, a.color, a.width));
+        }
+        next.add(stroke.last); // keep last endpoint
+      }
+
+      current = next;
+    }
+
+    return current;
   }
 
   @override

@@ -34,43 +34,43 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                if (!Responsive.isMobileLandscape(context)) ...[
-                  Row(
-                    children: [
-                      mobileCard(
-                        'assets/images/add-income.png',
-                        'ภาพรวม',
-                        'ดูคอร์สขายดี, รายได้ของคุณ, จำนวนนักเรียนในคอร์ส, รีวิว, และคะแนนของคุณ',
-                        'left',
-                        const MaintenancePage(),
-                      ),
-                      mobileCard(
-                        'assets/images/withdraw-money.png',
-                        'การเงิน',
-                        'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
-                        'right',
-                        const RevenueSummaryPage(),
-                      ),
-                    ],
-                  ),
-                ],
+                // if (!Responsive.isMobileLandscape(context)) ...[
+                //   Row(
+                //     children: [
+                //       mobileCard(
+                //         'assets/images/add-income.png',
+                //         'ภาพรวม',
+                //         'ดูคอร์สขายดี, รายได้ของคุณ, จำนวนนักเรียนในคอร์ส, รีวิว, และคะแนนของคุณ',
+                //         'left',
+                //         const MaintenancePage(),
+                //       ),
+                //       mobileCard(
+                //         'assets/images/withdraw-money.png',
+                //         'การเงิน',
+                //         'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
+                //         'right',
+                //         const RevenueSummaryPage(),
+                //       ),
+                //     ],
+                //   ),
+                // ],
                 if (Responsive.isMobileLandscape(context)) ...[
                   Row(
                     children: [
-                      mobileCard(
-                        'assets/images/add-income.png',
-                        'ภาพรวม',
-                        'ดูคอร์ส, รายได้, รีวิว, และอื่นๆ',
-                        'tightLeft',
-                        const MaintenancePage(),
-                      ),
-                      mobileCard(
-                        'assets/images/withdraw-money.png',
-                        'การเงิน',
-                        'จัดการ Credits รายได้, ยอดเงิน',
-                        'tight',
-                        const MaintenancePage(),
-                      ),
+                      // mobileCard(
+                      //   'assets/images/add-income.png',
+                      //   'ภาพรวม',
+                      //   'ดูคอร์ส, รายได้, รีวิว, และอื่นๆ',
+                      //   'tightLeft',
+                      //   const MaintenancePage(),
+                      // ),
+                      // mobileCard(
+                      //   'assets/images/withdraw-money.png',
+                      //   'การเงิน',
+                      //   'จัดการ Credits รายได้, ยอดเงิน',
+                      //   'tight',
+                      //   const MaintenancePage(),
+                      // ),
                       mobileCard(
                         'assets/images/menu_my_course.png',
                         'Solve course',
@@ -91,7 +91,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                       ),
                       mobileCard(
                         'assets/images/menu_qa.png',
-                        'ตอบคำถาม',
+                        'คลังคำตอบ',
                         'อธิบายนักเรียน',
                         'tightRight',
                         const MaintenancePage(),
@@ -126,7 +126,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                     children: [
                       mobileCard(
                         'assets/images/menu_qa.png',
-                        'ตอบคำถามนักเรียน',
+                        'คลังคำตอบ',
                         'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
                         'left',
                         const MaintenancePage(),
@@ -184,7 +184,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                           );
                         },
                         image: 'assets/images/menu_qa.png',
-                        title: "ตอบคำถามนักเรียน",
+                        title: "คลังคำตอบ",
                         content:
                             "อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring",
                       ),
@@ -214,7 +214,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                       ),
                       mobileCard(
                         'assets/images/menu_qa.png',
-                        'ตอบคำถามนักเรียน',
+                        'คลังคำตอบ',
                         'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
                         'right',
                         const MaintenancePage(),

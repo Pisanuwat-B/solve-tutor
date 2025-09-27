@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 class FirebaseService {
   final db = FirebaseFirestore.instance;
+  final Map<String, String?> _courseNameCache = {};
 
   Future<Map<String, dynamic>> getUserById(userId) async {
     final collectionRef = db.collection('users');
@@ -117,7 +118,7 @@ class FirebaseService {
 
   Future<String> getRecordCourseTutorialUrl() async {
     try {
-      DocumentReference<Object?> docRef = FirebaseFirestore.instance
+      DocumentReference<Object?> docRef = db
           .collection('external_info')
           .doc('solveExternalUrl');
       DocumentSnapshot<Object?> docSnapshot = await docRef.get();
@@ -160,5 +161,23 @@ class FirebaseService {
     } catch (e) {
       log("Error writing answer to Firestore: $e");
     }
+  }
+
+  Future<String?> getCourseName(String courseId) async {
+    final doc = await db
+        .collection('course')
+        .doc(courseId)
+        .get();
+    if (!doc.exists) return null;
+    final data = doc.data();
+    return data?['course_name']?.toString();
+  }
+  Future<String?> getCourseNameCached(String courseId) async {
+    if (_courseNameCache.containsKey(courseId)) {
+      return _courseNameCache[courseId];
+    }
+    final name = await getCourseName(courseId);
+    _courseNameCache[courseId] = name;
+    return name;
   }
 }

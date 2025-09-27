@@ -109,82 +109,82 @@ class _ManageCoursePageState extends State<ManageCoursePage>
                     ],
                   )
                 ],
-                Container(
-                  constraints: const BoxConstraints.expand(height: 80),
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Container(
-                          color: Colors.white,
-                          child: TabBar(
-                            controller: _tabController,
-                            labelPadding: const EdgeInsets.all(4),
-                            labelColor: primaryColor,
-                            unselectedLabelColor: Colors.black,
-                            indicatorColor: primaryColor,
-                            onTap: (value) {},
-                            tabs: [
-                              Container(
-                                alignment: Alignment.center,
-                                constraints: const BoxConstraints(
-                                    minWidth: 100, minHeight: 150),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "คอร์สบันทึกย้อนหลัง",
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      "(SOLVE MARKETPLACE)",
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Container(
-                              //   alignment: Alignment.center,
-                              //   constraints: const BoxConstraints(
-                              //       minWidth: 100, minHeight: 150),
-                              //   decoration: BoxDecoration(
-                              //     borderRadius: BorderRadius.circular(8),
-                              //   ),
-                              //   child: const Column(
-                              //     mainAxisAlignment: MainAxisAlignment.center,
-                              //     children: [
-                              //       Text(
-                              //         "คอร์สสอนสด",
-                              //         textAlign: TextAlign.center,
-                              //         maxLines: 1,
-                              //         overflow: TextOverflow.ellipsis,
-                              //       ),
-                              //       Text(
-                              //         "(SOLVE LIVE)",
-                              //         textAlign: TextAlign.center,
-                              //         maxLines: 1,
-                              //         overflow: TextOverflow.ellipsis,
-                              //       ),
-                              //     ],
-                              //   ),
-                              // ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Container(
+                //   constraints: const BoxConstraints.expand(height: 80),
+                //   decoration: const BoxDecoration(
+                //     color: Colors.transparent,
+                //   ),
+                //   child: Row(
+                //     crossAxisAlignment: CrossAxisAlignment.center,
+                //     children: [
+                //       Expanded(
+                //         child: Container(
+                //           color: Colors.white,
+                //           child: TabBar(
+                //             controller: _tabController,
+                //             labelPadding: const EdgeInsets.all(4),
+                //             labelColor: primaryColor,
+                //             unselectedLabelColor: Colors.black,
+                //             indicatorColor: primaryColor,
+                //             onTap: (value) {},
+                //             tabs: [
+                //               Container(
+                //                 alignment: Alignment.center,
+                //                 constraints: const BoxConstraints(
+                //                     minWidth: 100, minHeight: 150),
+                //                 decoration: BoxDecoration(
+                //                   borderRadius: BorderRadius.circular(8),
+                //                 ),
+                //                 child: const Column(
+                //                   mainAxisAlignment: MainAxisAlignment.center,
+                //                   children: [
+                //                     Text(
+                //                       "คอร์สบันทึกย้อนหลัง",
+                //                       textAlign: TextAlign.center,
+                //                       maxLines: 1,
+                //                       overflow: TextOverflow.ellipsis,
+                //                     ),
+                //                     Text(
+                //                       "(SOLVE MARKETPLACE)",
+                //                       textAlign: TextAlign.center,
+                //                       maxLines: 1,
+                //                       overflow: TextOverflow.ellipsis,
+                //                     ),
+                //                   ],
+                //                 ),
+                //               ),
+                //               // Container(
+                //               //   alignment: Alignment.center,
+                //               //   constraints: const BoxConstraints(
+                //               //       minWidth: 100, minHeight: 150),
+                //               //   decoration: BoxDecoration(
+                //               //     borderRadius: BorderRadius.circular(8),
+                //               //   ),
+                //               //   child: const Column(
+                //               //     mainAxisAlignment: MainAxisAlignment.center,
+                //               //     children: [
+                //               //       Text(
+                //               //         "คอร์สสอนสด",
+                //               //         textAlign: TextAlign.center,
+                //               //         maxLines: 1,
+                //               //         overflow: TextOverflow.ellipsis,
+                //               //       ),
+                //               //       Text(
+                //               //         "(SOLVE LIVE)",
+                //               //         textAlign: TextAlign.center,
+                //               //         maxLines: 1,
+                //               //         overflow: TextOverflow.ellipsis,
+                //               //       ),
+                //               //     ],
+                //               //   ),
+                //               // ),
+                //             ],
+                //           ),
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
