@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:solve_tutor/authentication/service/auth_provider.dart';
 import 'package:solve_tutor/constants/theme.dart';
-import 'package:solve_tutor/feature/calendar/pages/my_course_live.dart';
 import 'package:solve_tutor/feature/cheet/pages/my_document.dart';
-import 'package:solve_tutor/feature/class/pages/class_list_page.dart';
 import 'package:solve_tutor/feature/market_place/pages/my_course_vdo.dart';
-import 'package:solve_tutor/feature/payment/pages/solve_fund.dart';
 import 'package:solve_tutor/widgets/sizer.dart';
 
 import '../../live_classroom/utils/responsive.dart';
 import '../../maintenance/maintenance.dart';
-import '../../payment/pages/earning.dart';
+import '../../market_place/pages/answer_library.dart';
 
 class ManageMarketCoursePage extends StatefulWidget {
   const ManageMarketCoursePage({super.key});
@@ -22,6 +19,7 @@ class ManageMarketCoursePage extends StatefulWidget {
 
 class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
   AuthProvider? auth;
+
   @override
   Widget build(BuildContext context) {
     auth = Provider.of<AuthProvider>(context);
@@ -94,7 +92,9 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                         'คลังคำตอบ',
                         'อธิบายนักเรียน',
                         'tightRight',
-                        const MaintenancePage(),
+                        AnswerLibrary(
+                          tutorId: auth?.uid ?? "",
+                        ),
                       ),
                     ],
                   ),
@@ -129,7 +129,9 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                         'คลังคำตอบ',
                         'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
                         'left',
-                        const MaintenancePage(),
+                        AnswerLibrary(
+                          tutorId: auth?.uid ?? "",
+                        ),
                       ),
                     ],
                   ),
@@ -179,7 +181,9 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const MaintenancePage(),
+                              builder: (context) => AnswerLibrary(
+                                tutorId: auth?.uid ?? "",
+                              ),
                             ),
                           );
                         },
@@ -191,7 +195,8 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                     ],
                   ),
                 ],
-                if (Responsive.isDesktop(context) || Responsive.isTabletLandscape(context)) ...[
+                if (Responsive.isDesktop(context) ||
+                    Responsive.isTabletLandscape(context)) ...[
                   Row(
                     children: [
                       mobileCard(
@@ -233,7 +238,8 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
     );
   }
 
-  Widget mobileCard(String img, String title, String desc, String position, Widget link) {
+  Widget mobileCard(
+      String img, String title, String desc, String position, Widget link) {
     EdgeInsets cardPosition;
     if (position == 'left') {
       cardPosition = const EdgeInsets.fromLTRB(30, 25, 15, 0);

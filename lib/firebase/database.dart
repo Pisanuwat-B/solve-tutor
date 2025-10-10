@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'package:http/http.dart' as http;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 class FirebaseService {
@@ -37,15 +37,16 @@ class FirebaseService {
     return documentReference.id;
   }
 
-  Future<List<String>> uploadMarketSolvepad(String fileName) async {
+  Future<List<String>> uploadSolvepad(
+      String fileName, String storageLocation) async {
     final storageRef = FirebaseStorage.instance.ref();
     final tempDirectory = await getTemporaryDirectory();
 
-    final solvepadRef = storageRef.child("marketplace/$fileName.txt");
+    final solvepadRef = storageRef.child("$storageLocation/$fileName.txt");
     String localSolvepadPath = '${tempDirectory.path}/solvepad.txt';
     File solvepadFile = File(localSolvepadPath);
 
-    final voiceRef = storageRef.child("marketplace/$fileName.mp4");
+    final voiceRef = storageRef.child("$storageLocation/$fileName.mp4");
     String localVoicePath = '${tempDirectory.path}/tau_file.mp4';
     File voiceFile = File(localVoicePath);
 
@@ -118,9 +119,8 @@ class FirebaseService {
 
   Future<String> getRecordCourseTutorialUrl() async {
     try {
-      DocumentReference<Object?> docRef = db
-          .collection('external_info')
-          .doc('solveExternalUrl');
+      DocumentReference<Object?> docRef =
+          db.collection('external_info').doc('solveExternalUrl');
       DocumentSnapshot<Object?> docSnapshot = await docRef.get();
       if (docSnapshot.exists) {
         Map<String, dynamic>? data =
@@ -138,22 +138,26 @@ class FirebaseService {
 
   Future<void> addAnswer({
     required String courseId,
+    required String courseName,
     required int lesson,
     required int page,
     required String solvepad,
     required String tutorId,
     required String studentId,
-    required String questionText,
+    required String questionName,
+    required String questionId,
   }) async {
     try {
       await db.collection('answer_market').add({
         'courseId': courseId,
+        'courseName': courseName,
         'lesson': lesson,
         'page': page,
         'solvepad': solvepad,
         'tutorId': tutorId,
         'studentId': studentId,
-        'questionText': questionText,
+        'questionName': questionName,
+        'questionId': questionId,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
@@ -164,14 +168,12 @@ class FirebaseService {
   }
 
   Future<String?> getCourseName(String courseId) async {
-    final doc = await db
-        .collection('course')
-        .doc(courseId)
-        .get();
+    final doc = await db.collection('course').doc(courseId).get();
     if (!doc.exists) return null;
     final data = doc.data();
     return data?['course_name']?.toString();
   }
+
   Future<String?> getCourseNameCached(String courseId) async {
     if (_courseNameCache.containsKey(courseId)) {
       return _courseNameCache[courseId];

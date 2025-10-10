@@ -1841,8 +1841,7 @@ class _RecordCourseState extends State<RecordCourse> {
                                       context.read<CourseController>();
                                   await writeToFile('solvepad.txt', _data);
                                   List uploadUrl = await firebaseService
-                                      .uploadMarketSolvepad(
-                                          '${widget.course.id!}_${widget.lesson.lessonId.toString()}');
+                                      .uploadSolvepad('${widget.course.id!}_${widget.lesson.lessonId.toString()}','marketplace');
                                   String solvepadId =
                                       await firebaseService.writeSolvepadData(
                                           uploadUrl[0], uploadUrl[1]);

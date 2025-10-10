@@ -19,8 +19,6 @@ class QuestionNameModal extends StatefulWidget {
 class _QuestionNameModalState extends State<QuestionNameModal> {
   final TextEditingController _textController = TextEditingController();
 
-  bool _submitted = false;
-
   @override
   void dispose() {
     _textController.dispose(); // Always dispose controller
@@ -84,7 +82,7 @@ class _QuestionNameModalState extends State<QuestionNameModal> {
         ),
         const Divider(),
         const SizedBox(height: 10),
-        const Text("ตั้งชื่อคำถามนี้ว่า: "),
+        const Text("ตั้งชื่อคำถามนี้ เพื่อให้สะดวกต่อการเรียกดูย้อนหลัง: "),
         const SizedBox(height: 10),
         SizedBox(
           width: 200,
@@ -94,7 +92,7 @@ class _QuestionNameModalState extends State<QuestionNameModal> {
             decoration: InputDecoration(
               fillColor: Colors.grey.shade100,
               filled: true,
-              hintText: "ชื่อคำถามนี้",
+              hintText: "ชื่อคำถาม",
               contentPadding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(100),
@@ -120,43 +118,19 @@ class _QuestionNameModalState extends State<QuestionNameModal> {
               ),
             ),
             onPressed: () async {
-              // final questionText = _textController.text.trim();
-              // if (questionText.isEmpty) return;
-              //
-              // log('Question text: $questionText');
-              // log('Page number: ${widget.pageNo}');
-              // log('Course ID: ${widget.courseId}');
-              // log('Lesson ID: ${widget.lessonId}');
-              // log('Tutor ID: ${widget.tutorId}');
-              // log('Student ID: ${widget.studentId}');
-              //
-              // try {
-              //   await FirebaseFirestore.instance.collection('question_market').add({
-              //     'questionText': questionText,
-              //     'courseId': widget.courseId,
-              //     'lessonId': widget.lessonId,
-              //     'pageNo': widget.pageNo,
-              //     'tutorId': widget.tutorId,
-              //     'studentId': widget.studentId,
-              //     'timestamp': FieldValue.serverTimestamp(),
-              //   });
-              //
-              //   setState(() {
-              //     _submitted = true;
-              //   });
-              // } catch (e) {
-              //   log('Failed to save question: $e');
-              //   // Optionally show a snack bar or error dialog
-              // }
-
-              setState(() {
-                _submitted = true;
-              });
+              final value = _textController.text.trim();
+              if (value.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('กรุณากรอกชื่อคำถาม')),
+                );
+                return;
+              }
+              Navigator.pop(context, value);
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('ส่งคำถาม', style: CustomStyles.bold14White),
+                Text('ตกลง', style: CustomStyles.bold14White),
                 const SizedBox(width: 4),
                 const Icon(
                   Icons.arrow_forward,

@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,8 +16,8 @@ import 'authentication/service/auth_provider.dart';
 import 'feature/notification/notification_provider.dart';
 
 class Nav extends StatefulWidget {
-  Nav({super.key, this.index = 0});
-  int index;
+  const Nav({super.key, this.index = 0});
+  final int index;
   @override
   State<Nav> createState() => _NavState();
 }

@@ -11,6 +11,7 @@ import 'package:solve_tutor/feature/class/services/class_provider.dart';
 import 'package:solve_tutor/feature/notification/student_provider.dart';
 import 'package:solve_tutor/feature/order/service/order_mock_provider.dart';
 
+import '../feature/notification/answer_provider.dart';
 import '../feature/notification/notification_provider.dart';
 
 final List<SingleChildWidget> stateIndex = [
@@ -25,4 +26,5 @@ final List<SingleChildWidget> stateIndex = [
   ChangeNotifierProvider(create: (context) => StudentController()),
   ChangeNotifierProvider(create: (_) => NotificationProvider()),
   ChangeNotifierProvider(create: (_) => StudentProvider()),
+  ChangeNotifierProvider(create: (_) => AnswerProvider()),
 ];

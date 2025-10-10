@@ -69,6 +69,7 @@ class _NotificationPageState extends State<NotificationPage> {
         itemCount: notifications.length,
         itemBuilder: (context, index) {
           final data = notifications[index];
+          final questionId = data['id'] as String;
           final courseId  = data['courseId'] as String;
           final studentId = data['studentId'] as String;
           final lessonId  = int.tryParse('${data['lessonId']}') ?? 0;
@@ -118,6 +119,7 @@ class _NotificationPageState extends State<NotificationPage> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => ViewQuestion(
+                          questionId: questionId,
                           course: course,
                           lesson: lesson!,
                           studentId: studentId,
