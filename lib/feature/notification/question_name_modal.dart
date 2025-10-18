@@ -1,5 +1,3 @@
-import 'dart:developer';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../constants/theme.dart';
@@ -7,7 +5,6 @@ import '../calendar/constants/custom_colors.dart';
 import '../calendar/constants/custom_styles.dart';
 
 class QuestionNameModal extends StatefulWidget {
-
   const QuestionNameModal({
     super.key,
   });
@@ -34,7 +31,8 @@ class _QuestionNameModalState extends State<QuestionNameModal> {
             FocusScope.of(context).unfocus();
           },
           child: Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom),
             child: Material(
               color: Colors.transparent,
               child: Container(
@@ -100,7 +98,8 @@ class _QuestionNameModalState extends State<QuestionNameModal> {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(100),
-                borderSide: const BorderSide(color: Colors.transparent, width: 1),
+                borderSide:
+                    const BorderSide(color: Colors.transparent, width: 1),
               ),
             ),
             onEditingComplete: () => FocusScope.of(context).unfocus(),
@@ -145,5 +144,4 @@ class _QuestionNameModalState extends State<QuestionNameModal> {
       ],
     );
   }
-
 }

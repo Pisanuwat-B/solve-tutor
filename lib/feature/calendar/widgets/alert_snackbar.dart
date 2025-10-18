@@ -30,7 +30,7 @@ void showSnackBar(BuildContext context, String msg,
         )
       ],
     ),
-    duration: const Duration(seconds: 1),
+    duration: const Duration(seconds: 2),
     behavior: SnackBarBehavior.floating,
     backgroundColor: snackColor,
     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

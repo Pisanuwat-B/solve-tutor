@@ -35,8 +35,11 @@ class AnswerProvider extends ChangeNotifier {
           .where('tutorId', isEqualTo: tutorId)
           .orderBy('timestamp', descending: true)
           .get();
-      _answers =
-          snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+      _answers = snapshot.docs
+          .where((doc) {
+        final data = doc.data();
+        return data['isReuse'] != true;
+      }).map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
       // extract unique course list
       _courses = _answers

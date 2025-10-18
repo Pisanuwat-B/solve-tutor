@@ -2,8 +2,8 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 
-class RevenueSummaryPage extends StatelessWidget {
-  const RevenueSummaryPage({super.key});
+class AdminFinance extends StatelessWidget {
+  const AdminFinance({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class RevenueSummaryPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.maybePop(context),
         ),
-        title: const Text('สรุปรายได้'),
+        title: const Text('สรุปการเงิน สำหรับ Admin'),
         centerTitle: false,
       ),
       body: ListView(
@@ -26,12 +26,12 @@ class RevenueSummaryPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'คอร์สบันทึกวิดีโอ',
+                  'คอร์ส Solvepad Marketplace',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'สรุปรายได้จากการขายคอร์สบันทึกวิดีโอบน marketplace',
+                  'สรุปรายได้จากการขายคอร์ส Solvepad marketplace',
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
               ],
@@ -52,7 +52,7 @@ class RevenueSummaryPage extends StatelessWidget {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,11 +66,11 @@ class RevenueSummaryPage extends StatelessWidget {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            '01/08/2023 - 31/08/2023',
+                            '01/10/2025 - 31/10/2025',
                             style: TextStyle(color: Colors.grey),
                           ),
                           Text(
-                            '850.00฿',
+                            '1198.00฿',
                             style: TextStyle(
                               color: const Color(0xFF10B981),
                               fontSize: 28,
@@ -78,6 +78,12 @@ class RevenueSummaryPage extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ),
+                      _StatTile(
+                        title: 'จำนวนนักเรียนที่กด subscribe',
+                        mainText: '2',
+                        unit: 'คน',
+                        accent: Colors.black87,
                       ),
                       FilledButton(
                         style: FilledButton.styleFrom(
@@ -89,7 +95,7 @@ class RevenueSummaryPage extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {},
-                        child: const Text('ถอนเงิน'),
+                        child: const Text('กดไปก็ไม่มีอะไรหรอก ปุ่มนี้'),
                       ),
                     ],
                   ),
@@ -102,18 +108,18 @@ class RevenueSummaryPage extends StatelessWidget {
                       final isNarrow = c.maxWidth < 600;
                       final children = const [
                         _StatTile(
-                          title: 'คอร์สเรียน',
-                          period: '01/08/2023 - 31/08/2023',
+                          title: 'คอร์สเรียนทั้งหมด',
+                          period: '01/10/2025 - 31/10/2025',
                           mainText: '3',
                           unit: 'คอร์ส',
-                          sub: 'คุณมี 3 คอร์สที่ยังไม่ได้ออนไลน์',
+                          sub: 'จำนวนคอร์สออนไลน์ ที่นักเรียนสามารถเข้าถึงได้',
                           accent: Colors.black87,
                         ),
                         _StatTile(
-                          title: 'ยอดขาย',
-                          period: '01/08/2023 - 31/08/2023',
-                          mainText: '1,000 ฿',
-                          chipText: 'เพิ่มขึ้น 5% จากเดือนที่ผ่านมา',
+                          title: 'จำนวน tutor ที่ยืนยันตัวตนแล้ว',
+                          period: '01/10/2025 - 31/10/2025',
+                          mainText: '3 คน',
+                          chipText: 'เพิ่มขึ้น 100% จากเดือนที่ผ่านมา',
                           chipIcon: Icons.trending_up,
                           chipColor: Color(0xFF10B981),
                           accent: Colors.black87,
@@ -162,7 +168,7 @@ class RevenueSummaryPage extends StatelessWidget {
 
 class _StatTile extends StatelessWidget {
   final String title;
-  final String period;
+  final String? period;
   final String mainText;
   final String? unit;
   final String? sub;
@@ -173,7 +179,7 @@ class _StatTile extends StatelessWidget {
 
   const _StatTile({
     required this.title,
-    required this.period,
+    this.period,
     required this.mainText,
     this.unit,
     this.sub,
@@ -195,7 +201,7 @@ class _StatTile extends StatelessWidget {
               style:
               const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text(period, style: subtle),
+          if (period != null) Text(period!, style: subtle),
           const SizedBox(height: 8),
           Text(
             '$mainText ${unit ?? ''}',

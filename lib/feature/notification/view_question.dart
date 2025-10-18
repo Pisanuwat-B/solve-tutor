@@ -31,6 +31,7 @@ import '../live_classroom/solvepad/solve_watch.dart';
 import '../live_classroom/solvepad/solvepad_drawer.dart';
 import '../live_classroom/solvepad/solvepad_stroke_model.dart';
 import '../live_classroom/utils/responsive.dart';
+import 'answer_library_modal.dart';
 
 class ViewQuestion extends StatefulWidget {
   final CourseModel course;
@@ -39,6 +40,7 @@ class ViewQuestion extends StatefulWidget {
   final String questionId;
   final String studentName;
   final String questionName;
+  final int courseTime;
   final String solvepadId;
 
   const ViewQuestion({
@@ -49,6 +51,7 @@ class ViewQuestion extends StatefulWidget {
     required this.questionId,
     required this.studentName,
     required this.questionName,
+    required this.courseTime,
     required this.solvepadId,
   });
 
@@ -132,6 +135,9 @@ class _ViewQuestionState extends State<ViewQuestion> {
   final List<List<SolvepadStroke?>> _laserPoints = [[]];
   final List<List<SolvepadStroke?>> _highlighterPoints = [[]];
   final List<Offset> _eraserPoints = [const Offset(-100, -100)];
+  final List<List<SolvepadStroke?>> _coursePenPoints = [[]];
+  final List<List<SolvepadStroke?>> _courseHighlighterPoints = [[]];
+  final List<Offset> _courseEraserPoints = [const Offset(-100, -100)];
   final List<List<SolvepadStroke?>> _questionPenPoints = [[]];
   final List<List<SolvepadStroke?>> _questionLaserPoints = [[]];
   final List<List<SolvepadStroke?>> _questionHighlighterPoints = [[]];
@@ -143,16 +149,22 @@ class _ViewQuestionState extends State<ViewQuestion> {
 
   // ---------- VARIABLE: Solve Size
   Size mySolvepadSize = const Size(1059.0, 547.0);
-  Size studentSolvepadSize = const Size(1059.0, 547.0);
+  Size questionSolvepadSize = const Size(1059.0, 547.0);
   Size tutorSolvepadSize = const Size(1059.0, 547.0);
-  double questionImageWidth = 0;
-  double questionExtraSpaceX = 0;
+  Size courseSolvepadSize = const Size(1059.0, 547.0);
   double sheetImageRatio = 0.708;
   double myImageWidth = 0;
   double myExtraSpaceX = 0;
+  double questionImageWidth = 0;
+  double questionExtraSpaceX = 0;
   double questionScaleImageX = 0;
   double questionScaleX = 0;
   double questionScaleY = 0;
+  double courseImageWidth = 0;
+  double courseExtraSpaceX = 0;
+  double courseScaleImageX = 0;
+  double courseScaleX = 0;
+  double courseScaleY = 0;
 
   // ---------- VARIABLE: Solve Pad features
   String _formattedElapsedTime = 'Recording 00:00:00';
@@ -165,11 +177,14 @@ class _ViewQuestionState extends State<ViewQuestion> {
   Timer? _laserTimer;
   Timer? _recordTimer;
   int _currentPage = 0;
+  int _questionCurrentPage = 0;
+  int _coursePage = 0;
   final PageController _pageController = PageController();
   final List<TransformationController> _transformationController = [];
   var courseController = CourseController();
   late String courseName;
   bool isQuestionLoaded = false;
+  bool isCourseLoaded = false;
   bool isDocLoaded = false;
   bool isRecording = false;
   bool isRecordEnd = false;
@@ -180,6 +195,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
   bool isAnswerSent = false;
   bool isReplayLoading = false;
   bool isViewOnly = false;
+  bool _isReadyToShow = false;
 
   // ---------- VARIABLE: recorder
   Codec _codec = Codec.aacMP4;
@@ -196,6 +212,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
   // ---------- VARIABLE: data collection
   late Map<String, dynamic> _answerData;
   late Map<String, dynamic> _questionData;
+  late Map<String, dynamic> _courseData;
   String jsonData = '';
   late List<Map<String, dynamic>> _actions;
   List<StrokeStamp> currentStroke = [];
@@ -233,25 +250,6 @@ class _ViewQuestionState extends State<ViewQuestion> {
     initAudio();
     initPagesData();
     initPagingBtn();
-  }
-
-  void initQuestionData() async {
-    var downloadData =
-        await firebaseService.getMarketCourseSolvepadData(widget.solvepadId);
-    String voiceUrl =
-        await firebaseService.getMarketCourseAudioFile(downloadData[1]);
-    log('download question success');
-    _questionData = downloadData[0];
-    setState(() {
-      questionVoicePath = voiceUrl;
-      _mPlaybackReady = true;
-      studentSolvepadSize =
-          Size(_questionData['solvepadWidth'], _questionData['solvepadHeight']);
-      replayDuration = _questionData['metadata']['duration'];
-    });
-    initQuestionSolvepadScaling();
-    log(studentSolvepadSize.toString());
-    isQuestionLoaded = true;
   }
 
   Future<void> initRecorderPath() async {
@@ -295,8 +293,35 @@ class _ViewQuestionState extends State<ViewQuestion> {
       }
       courseName = courseController.courseData!.courseName!;
       isDocLoaded = true;
+      initCourseData(courseController.courseData!.lessons![(widget.lesson.lessonId!)-1].media!);
       initQuestionData();
     });
+  }
+
+  void initCourseData(String solvepadId) async {
+    var downloadData = await firebaseService.getMarketCourseSolvepadData(solvepadId);
+    _courseData = downloadData[0];
+    setState(() {
+      courseSolvepadSize = Size(_courseData['solvepadWidth'], _courseData['solvepadHeight']);
+    });
+    initCourseSolvepadScaling();
+    isCourseLoaded = true;
+  }
+
+  void initQuestionData() async {
+    var downloadData = await firebaseService.getMarketCourseSolvepadData(widget.solvepadId);
+    String voicePath = await firebaseService.getMarketCourseAudioFile(downloadData[1]);
+    _questionData = downloadData[0];
+    log('initQuestionData');
+    log(_questionData.toString());
+    setState(() {
+      questionVoicePath = voicePath;
+      _mPlaybackReady = true;
+      questionSolvepadSize = Size(_questionData['solvepadWidth'], _questionData['solvepadHeight']);
+      replayDuration = _questionData['metadata']['duration'];
+    });
+    initQuestionSolvepadScaling();
+    isQuestionLoaded = true;
   }
 
   void initPagingBtn() {
@@ -312,25 +337,116 @@ class _ViewQuestionState extends State<ViewQuestion> {
     }
   }
 
+  void initCourseSolvepadScaling() {
+    courseImageWidth = courseSolvepadSize.height * sheetImageRatio;
+    courseExtraSpaceX = (courseSolvepadSize.width - courseImageWidth) / 2;
+    myImageWidth = mySolvepadSize.height * sheetImageRatio;
+    myExtraSpaceX = (mySolvepadSize.width - myImageWidth) / 2;
+    courseScaleImageX = myImageWidth / courseImageWidth;
+    courseScaleX = mySolvepadSize.width / courseSolvepadSize.width;
+    courseScaleY = mySolvepadSize.height / courseSolvepadSize.height;
+    populateCourseNote(_courseData);
+  }
+
   void initQuestionSolvepadScaling() {
-    questionImageWidth = studentSolvepadSize.height * sheetImageRatio;
-    questionExtraSpaceX = (studentSolvepadSize.width - questionImageWidth) / 2;
+    questionImageWidth = questionSolvepadSize.height * sheetImageRatio;
+    questionExtraSpaceX = (questionSolvepadSize.width - questionImageWidth) / 2;
     myImageWidth = mySolvepadSize.height * sheetImageRatio;
     myExtraSpaceX = (mySolvepadSize.width - myImageWidth) / 2;
     questionScaleImageX = myImageWidth / questionImageWidth;
-    questionScaleX = mySolvepadSize.width / studentSolvepadSize.width;
-    questionScaleY = mySolvepadSize.height / studentSolvepadSize.height;
+    questionScaleX = mySolvepadSize.width / questionSolvepadSize.width;
+    questionScaleY = mySolvepadSize.height / questionSolvepadSize.height;
   }
 
   Offset questionScaleOffset(Offset offset) {
     return Offset(
-        (offset.dx - questionExtraSpaceX) * questionScaleX + myExtraSpaceX,
+        (offset.dx - questionExtraSpaceX) * questionScaleImageX + myExtraSpaceX,
         offset.dy * questionScaleY);
   }
-
   double questionScaleScrollX(double scrollX) => scrollX * questionScaleX;
-
   double questionScaleScrollY(double scrollY) => scrollY * questionScaleY;
+
+  Offset courseScaleOffset(Offset offset) {
+    return Offset(
+        (offset.dx - courseExtraSpaceX) * courseScaleImageX + myExtraSpaceX,
+        offset.dy * courseScaleY);
+  }
+  double courseScaleScrollX(double scrollX) => scrollX * courseScaleX;
+  double courseScaleScrollY(double scrollY) => scrollY * courseScaleY;
+
+  void populateCourseNote(Map<String, dynamic> jsonData) {
+    int questionIndex = 0;
+    while (questionIndex < jsonData['actions'].length) {
+      if (_courseData['actions'][questionIndex]['time'] <= widget.courseTime) {
+        executeCourseAction(jsonData['actions'][questionIndex]);
+        questionIndex++;
+      } else {
+        break;
+      }
+    }
+    setState(() { _isReadyToShow = true; });
+  }
+
+  Future<void> executeCourseAction(Map<String, dynamic> action) async {
+    int currentCoursePointIndex = 0;
+    switch (action['type']) {
+      case 'start-recording':
+        _coursePage = action['page'];
+        break;
+      case 'change-page':
+        _coursePage = action['data'];
+        break;
+      case 'stop-recording':
+        break;
+      case 'scroll-zoom':
+        break;
+      case 'drawing':
+        List<dynamic> points = action['data']['points'];
+        while (currentCoursePointIndex < points.length) {
+          drawCoursePoint(
+              points[currentCoursePointIndex],
+              action['data']['tool'],
+              action['data']['color'],
+              action['data']['strokeWidth']);
+          currentCoursePointIndex++;
+        }
+        currentCoursePointIndex = 0;
+        drawCourseNull(action['data']['tool']);
+        break;
+      case 'erasing':
+        for (var eraseAction in action['data']) {
+          if (eraseAction['action'] == 'moves') {
+            int movingIndex = 0;
+            while (movingIndex < eraseAction['points'].length) {
+              setState(() {
+                _courseEraserPoints[_currentPage] = courseScaleOffset(Offset(
+                    eraseAction['points'][movingIndex]['x'],
+                    eraseAction['points'][movingIndex]['y']));
+              });
+              movingIndex++;
+            }
+          } // move
+          else if (eraseAction['action'] == 'erase') {
+            List<SolvepadStroke?> pointStack =
+            _coursePenPoints[_coursePage];
+            if (eraseAction['mode'] == "pen") {
+              pointStack = _coursePenPoints[_coursePage];
+            } else if (eraseAction['mode'] == "high") {
+              pointStack = _courseHighlighterPoints[_coursePage];
+            }
+            setState(() {
+              var start = eraseAction['prev'].clamp(0, pointStack.length);
+              var end = eraseAction['next'].clamp(start, pointStack.length);
+              pointStack.removeRange(start, end);
+            });
+          } // erase
+        }
+        setState(() {
+          _courseEraserPoints[_coursePage] = const Offset(-100, -100);
+        });
+        break;
+    }
+  }
 
   @override
   dispose() {
@@ -382,6 +498,9 @@ class _ViewQuestionState extends State<ViewQuestion> {
       _questionLaserPoints.add([]);
       _questionHighlighterPoints.add([]);
       _questionEraserPoints.add(const Offset(-100, -100));
+      _coursePenPoints.add([]);
+      _courseHighlighterPoints.add([]);
+      _courseEraserPoints.add(const Offset(-100, -100));
     });
   }
 
@@ -760,6 +879,26 @@ class _ViewQuestionState extends State<ViewQuestion> {
       setState(() {
         _questionName = name;
       });
+      showAnswerLibraryModal(_questionName);
+    }
+  }
+
+  Future<void> showAnswerLibraryModal(String questionName) async {
+    final ok = await showDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => AnswerLibraryModal(
+        tutorId: widget.course.tutorId!,
+        studentId: widget.studentId,
+        questionId: widget.questionId,
+        questionName: questionName,
+        courseId: widget.course.courseName!,
+      ),
+    );
+    if (ok == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('เลือกคำตอบ สำเร็จ')),
+      );
     }
   }
 
@@ -791,11 +930,12 @@ class _ViewQuestionState extends State<ViewQuestion> {
     switch (action['type']) {
       case 'start-recording':
         var page = action['page'];
-        _pageController.animateToPage(
+        await _pageController.animateToPage(
           page,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
+        await WidgetsBinding.instance.endOfFrame;
         _transformationController[page].value = Matrix4.identity()
           ..translate(action['scrollX'] / 2, action['scrollY'])
           ..scale(action['scale']);
@@ -916,11 +1056,13 @@ class _ViewQuestionState extends State<ViewQuestion> {
     switch (action['type']) {
       case 'start-recording':
         var page = action['page'];
-        _pageController.animateToPage(
+        await _pageController.animateToPage(
           page,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
+        _questionCurrentPage = page;
+        await WidgetsBinding.instance.endOfFrame;
         _transformationController[page].value = Matrix4.identity()
           ..translate(action['scrollX'] / 2, action['scrollY'])
           ..scale(action['scale']);
@@ -931,16 +1073,20 @@ class _ViewQuestionState extends State<ViewQuestion> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
+        _questionCurrentPage = action['data'];
         break;
       case 'stop-recording':
         break;
       case 'scroll-zoom':
+        log('scroll-zoom question');
         List<dynamic> scrollAction = action['data'];
         while (currentReplayScrollIndex < scrollAction.length) {
           await Future.delayed(const Duration(milliseconds: 0), () {
             if (questionStopwatch.elapsed.inMilliseconds >=
                 scrollAction[currentReplayScrollIndex]['time']) {
-              _transformationController[_currentPage].value = Matrix4.identity()
+              log('trigger scroll-zoom');
+              log(_questionCurrentPage.toString());
+              _transformationController[_questionCurrentPage].value = Matrix4.identity()
                 ..translate(scrollAction[currentReplayScrollIndex]['x'],
                     scrollAction[currentReplayScrollIndex]['y'])
                 ..scale(scrollAction[currentReplayScrollIndex]['scale']);
@@ -978,7 +1124,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
                 if (questionStopwatch.elapsed.inMilliseconds >=
                     eraseAction['points'][movingIndex]['time']) {
                   setState(() {
-                    _questionEraserPoints[_currentPage] = Offset(
+                    _questionEraserPoints[_questionCurrentPage] = Offset(
                         eraseAction['points'][movingIndex]['x'],
                         eraseAction['points'][movingIndex]['y']);
                   });
@@ -994,20 +1140,20 @@ class _ViewQuestionState extends State<ViewQuestion> {
             }
             if (eraseAction['mode'] == "pen") {
               setState(() {
-                _questionPenPoints[_currentPage]
+                _questionPenPoints[_questionCurrentPage]
                     .removeRange(eraseAction['prev'], eraseAction['next']);
               });
             } // pen
             else if (eraseAction['mode'] == "high") {
               setState(() {
-                _questionHighlighterPoints[_currentPage]
+                _questionHighlighterPoints[_questionCurrentPage]
                     .removeRange(eraseAction['prev'], eraseAction['next']);
               });
             }
           } // erase
         }
         setState(() {
-          _questionEraserPoints[_currentPage] = const Offset(-100, -100);
+          _questionEraserPoints[_questionCurrentPage] = const Offset(-100, -100);
         });
         break;
     }
@@ -1041,10 +1187,38 @@ class _ViewQuestionState extends State<ViewQuestion> {
     buckets[_currentPage].add(null);
   }
 
+  void drawCoursePoint(
+      Map<String, dynamic> point, String tool, String color, double stroke) {
+    if (tool == "DrawingMode.pen") {
+      _coursePenPoints[_coursePage].add(SolvepadStroke(
+        courseScaleOffset(Offset(point['x'], point['y'])),
+        Color(int.parse(color, radix: 16)),
+        stroke,
+      ));
+      setState(() {});
+    } // pen
+    else if (tool == "DrawingMode.highlighter") {
+      _courseHighlighterPoints[_coursePage].add(SolvepadStroke(
+        courseScaleOffset(Offset(point['x'], point['y'])),
+        Color(int.parse(color, radix: 16)),
+        stroke,
+      ));
+      setState(() {});
+    } // high
+  }
+
+  void drawCourseNull(String tool) {
+    if (tool == "DrawingMode.pen") {
+      _coursePenPoints[_coursePage].add(null);
+    } else if (tool == "DrawingMode.highlighter") {
+      _courseHighlighterPoints[_coursePage].add(null);
+    }
+  }
+
   void drawQuestionPoint(
       Map<String, dynamic> point, String tool, String color, double stroke) {
     final buckets = _pickStrokeBucket(tool, true);
-    buckets[_currentPage].add(SolvepadStroke(
+    buckets[_questionCurrentPage].add(SolvepadStroke(
       questionScaleOffset(Offset(point['x'], point['y'])),
       Color(int.parse(color, radix: 16)),
       stroke,
@@ -1054,7 +1228,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
 
   void drawQuestionNull(String tool) {
     final buckets = _pickStrokeBucket(tool, true);
-    buckets[_currentPage].add(null);
+    buckets[_questionCurrentPage].add(null);
   }
 
   Future<void> writeToFile(String fileName, dynamic data) async {
@@ -1695,7 +1869,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
                               }
                             },
                             child: CustomPaint(
-                              painter: SolvepadDrawerLive(
+                              painter: SolvepadDrawerViewQuestion(
                                 _penPoints[index],
                                 _replayPoints[index],
                                 _eraserPoints[index],
@@ -1705,6 +1879,9 @@ class _ViewQuestionState extends State<ViewQuestion> {
                                 _questionLaserPoints[index],
                                 _questionHighlighterPoints[index],
                                 _questionEraserPoints[index],
+                                _coursePenPoints[index],
+                                _courseHighlighterPoints[index],
+                                _courseEraserPoints[index],
                               ),
                             ),
                           ),
@@ -1837,12 +2014,12 @@ class _ViewQuestionState extends State<ViewQuestion> {
         setState(() {
           isQuestionPausing = false;
         });
-        resumeReplay();
+        resumeQuestion();
       } else {
         setState(() {
           isQuestionPausing = true;
         });
-        pauseReplay();
+        pauseQuestion();
       }
     } // before replay
     else {
@@ -1972,7 +2149,8 @@ class _ViewQuestionState extends State<ViewQuestion> {
                       children: <Widget>[
                         S.w(8),
                         InkWell(
-                          onTap: () => headerLayer1Mobile(),
+                          // onTap: () => headerLayer1Mobile(),
+                          onTap: () => showAnswerLibraryModal(_questionName),
                           child: Image.asset(
                             ImageAssets.iconInfoPage,
                             height: 24,
@@ -2175,6 +2353,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
                         await firebaseService.addAnswer(
                           courseId: widget.course.id!,
                           courseName: widget.course.courseName!,
+                          courseTime: widget.courseTime,
                           lesson: widget.lesson.lessonId!,
                           page: _currentPage,
                           solvepad: solvepadId,

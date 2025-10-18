@@ -307,12 +307,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   // const Divider(thickness: 2),
                   settingCard(
                       title: 'เงื่อนไขข้อตกลงการใช้บริการ',
-                      url: 'https://solve.in.th/terms-of-service/'),
+                      url: 'https://solve-f1778.web.app/terms.html'),
                   const Divider(thickness: 2),
                   const SizedBox(height: 10),
                   settingCard(
                       title: 'นโยบายความเป็นส่วนตัว',
-                      url: 'https://solve.in.th/privacy-policy/'),
+                      url: 'https://solve-f1778.web.app/privacy.html'),
                   const Divider(thickness: 2),
                   GestureDetector(
                     onTap: () {

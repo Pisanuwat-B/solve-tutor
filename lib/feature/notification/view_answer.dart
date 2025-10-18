@@ -4,15 +4,11 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:ui' as touch_ui;
 
-import 'package:audio_session/audio_session.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_xlider/flutter_xlider.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 import 'package:solve_tutor/feature/calendar/controller/create_course_controller.dart';
 
@@ -21,8 +17,6 @@ import '../calendar/constants/assets_manager.dart';
 import '../calendar/constants/custom_colors.dart';
 import '../calendar/constants/custom_styles.dart';
 import '../calendar/model/course_model.dart';
-import '../calendar/widgets/alert_overlay.dart';
-import '../calendar/widgets/alert_snackbar.dart';
 import '../calendar/widgets/sizebox.dart';
 import '../live_classroom/components/divider.dart';
 import '../live_classroom/components/room_loading_screen.dart';
@@ -31,25 +25,25 @@ import '../live_classroom/solvepad/solvepad_drawer.dart';
 import '../live_classroom/solvepad/solvepad_stroke_model.dart';
 import '../live_classroom/utils/responsive.dart';
 
-class RecordAnswer extends StatefulWidget {
+class ViewAnswer extends StatefulWidget {
   final CourseModel course;
   final Lessons lesson;
-  final String studentId;
-  final String questionText;
+  final int courseTime;
+  final String solvepadId;
 
-  const RecordAnswer({
-    Key? key,
+  const ViewAnswer({
+    super.key,
     required this.lesson,
     required this.course,
-    required this.studentId,
-    required this.questionText,
-  }) : super(key: key);
+    required this.courseTime,
+    required this.solvepadId,
+  });
 
   @override
-  State<RecordAnswer> createState() => _RecordAnswerState();
+  State<ViewAnswer> createState() => _ViewAnswerState();
 }
 
-class _RecordAnswerState extends State<RecordAnswer> {
+class _ViewAnswerState extends State<ViewAnswer> {
   // Screen and tools
   bool micEnable = false;
   bool displayEnable = false;
@@ -125,26 +119,38 @@ class _RecordAnswerState extends State<RecordAnswer> {
   final List<List<SolvepadStroke?>> _laserPoints = [[]];
   final List<List<SolvepadStroke?>> _highlighterPoints = [[]];
   final List<Offset> _eraserPoints = [const Offset(-100, -100)];
+  final List<List<SolvepadStroke?>> _coursePenPoints = [[]];
+  final List<List<SolvepadStroke?>> _courseHighlighterPoints = [[]];
+  final List<Offset> _courseEraserPoints = [const Offset(-100, -100)];
+  final List<List<SolvepadStroke?>> _answerPenPoints = [[]];
+  final List<List<SolvepadStroke?>> _answerLaserPoints = [[]];
+  final List<List<SolvepadStroke?>> _answerHighlighterPoints = [[]];
+  final List<Offset> _answerEraserPoints = [const Offset(-100, -100)];
   final List<List<Offset?>> _replayPoints = [[]];
   DrawingMode _mode = DrawingMode.drag;
-  final SolveStopwatch solveStopwatch = SolveStopwatch();
+  final SolveStopwatch answerStopwatch = SolveStopwatch();
+  final SolveStopwatch questionStopwatch = SolveStopwatch();
 
   // ---------- VARIABLE: Solve Size
   Size mySolvepadSize = const Size(1059.0, 547.0);
+  Size questionSolvepadSize = const Size(1059.0, 547.0);
   Size tutorSolvepadSize = const Size(1059.0, 547.0);
-  double tutorImageWidth = 0;
-  double tutorExtraSpaceX = 0;
+  Size courseSolvepadSize = const Size(1059.0, 547.0);
   double sheetImageRatio = 0.708;
-  double studentImageWidth = 0;
-  double studentExtraSpaceX = 0;
   double myImageWidth = 0;
   double myExtraSpaceX = 0;
-  double scaleImageX = 0;
-  double scaleX = 0;
-  double scaleY = 0;
+  double questionImageWidth = 0;
+  double questionExtraSpaceX = 0;
+  double questionScaleImageX = 0;
+  double questionScaleX = 0;
+  double questionScaleY = 0;
+  double courseImageWidth = 0;
+  double courseExtraSpaceX = 0;
+  double courseScaleImageX = 0;
+  double courseScaleX = 0;
+  double courseScaleY = 0;
 
   // ---------- VARIABLE: Solve Pad features
-  String _formattedElapsedTime = 'Recording 00:00:00';
   bool _isPrevBtnActive = false;
   bool _isNextBtnActive = true;
   bool _isStylusActive = false;
@@ -154,36 +160,33 @@ class _RecordAnswerState extends State<RecordAnswer> {
   Timer? _laserTimer;
   Timer? _recordTimer;
   int _currentPage = 0;
+  int _coursePage = 0;
   final PageController _pageController = PageController();
   final List<TransformationController> _transformationController = [];
   var courseController = CourseController();
   late String courseName;
+  bool isAnswerLoaded = false;
   bool isCourseLoaded = false;
-  bool isRecording = false;
-  bool isRecordEnd = false;
-  bool isReplaying = false;
-  bool isReplayEnd = true;
+  bool isDocLoaded = false;
+  bool isAnswerPlaying = false;
+  bool isAnswerPausing = false;
+  bool isAnswerReplaying = false;
+  bool isAnswerSent = false;
   bool isReplayLoading = false;
   bool isViewOnly = false;
 
-  // ---------- VARIABLE: recorder
-  Codec _codec = Codec.aacMP4;
-
   // String _mPath = 'tau_file.mp4';
-  late String _mPath;
+  late String questionVoicePath;
+  late String answerVoicePath;
   FlutterSoundPlayer? _mPlayer = FlutterSoundPlayer();
-  FlutterSoundRecorder? _mRecorder = FlutterSoundRecorder();
   bool _mPlayerIsInited = false;
-  bool _mRecorderIsInited = false;
   bool _mPlaybackReady = false;
 
   // ---------- VARIABLE: data collection
-  late Map<String, dynamic> _data;
+  late Map<String, dynamic> _questionData;
+  late Map<String, dynamic> _courseData;
   String jsonData = '';
   late List<Map<String, dynamic>> _actions;
-  List<StrokeStamp> currentStroke = [];
-  List<dynamic> currentEraserStroke = [];
-  List<ScrollZoomStamp> currentScrollZoom = [];
   int currentReplayIndex = 0;
   int currentReplayPointIndex = 0;
   int currentReplayScrollIndex = 0;
@@ -194,11 +197,11 @@ class _RecordAnswerState extends State<RecordAnswer> {
   double replayProgress = 0;
   int replayDuration = 100;
 
+
   /// TODO: Get rid of all Mockup reference
   @override
   void initState() {
     super.initState();
-    log(widget.studentId);
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.landscapeRight, DeviceOrientation.landscapeLeft]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [
@@ -210,26 +213,15 @@ class _RecordAnswerState extends State<RecordAnswer> {
         SystemUiOverlay.bottom,
       ]);
     });
-    initRecorderPath();
     initAudio();
     initPagesData();
     initPagingBtn();
-  }
-
-  Future<void> initRecorderPath() async {
-    final tempDir = await getTemporaryDirectory();
-    _mPath = '${tempDir.path}/tau_file.mp4';
   }
 
   void initAudio() {
     _mPlayer!.openPlayer().then((value) {
       setState(() {
         _mPlayerIsInited = true;
-      });
-    });
-    openTheRecorder().then((value) {
-      setState(() {
-        _mRecorderIsInited = true;
       });
     });
   }
@@ -256,8 +248,34 @@ class _RecordAnswerState extends State<RecordAnswer> {
         }
       }
       courseName = courseController.courseData!.courseName!;
-      isCourseLoaded = true;
+      isDocLoaded = true;
+      initCourseData(courseController.courseData!.lessons![(widget.lesson.lessonId!)-1].media!);
+      initAnswerData();
     });
+  }
+
+  void initCourseData(String solvepadId) async {
+    var downloadData = await firebaseService.getMarketCourseSolvepadData(solvepadId);
+    _courseData = downloadData[0];
+    setState(() {
+      courseSolvepadSize = Size(_courseData['solvepadWidth'], _courseData['solvepadHeight']);
+    });
+    initCourseSolvepadScaling();
+    isCourseLoaded = true;
+  }
+
+  void initAnswerData() async {
+    var downloadData = await firebaseService.getMarketCourseSolvepadData(widget.solvepadId);
+    String voicePath = await firebaseService.getMarketCourseAudioFile(downloadData[1]);
+    _questionData = downloadData[0];
+    setState(() {
+      questionVoicePath = voicePath;
+      _mPlaybackReady = true;
+      questionSolvepadSize = Size(_questionData['solvepadWidth'], _questionData['solvepadHeight']);
+      replayDuration = _questionData['metadata']['duration'];
+    });
+    initQuestionSolvepadScaling();
+    isAnswerLoaded = true;
   }
 
   void initPagingBtn() {
@@ -273,31 +291,158 @@ class _RecordAnswerState extends State<RecordAnswer> {
     }
   }
 
-  void getRecordedSolvepad() async {
-    var downloadData =
-        await firebaseService.getMarketCourseSolvepadData(widget.lesson.media!);
-    String voiceUrl =
-        await firebaseService.getMarketCourseAudioFile(downloadData[1]);
-    log('download success');
-    _data = downloadData[0];
-    setState(() {
-      _mPath = voiceUrl;
-      _mPlaybackReady = true;
-      tutorSolvepadSize = Size(_data['solvepadWidth'], _data['solvepadHeight']);
-      replayDuration = _data['metadata']['duration'];
-      isReplayLoading = false;
-    });
-    initSolvepadScaling();
-  }
-
-  void initSolvepadScaling() {
-    tutorImageWidth = tutorSolvepadSize.height * sheetImageRatio;
-    tutorExtraSpaceX = (tutorSolvepadSize.width - tutorImageWidth) / 2;
+  void initCourseSolvepadScaling() {
+    courseImageWidth = courseSolvepadSize.height * sheetImageRatio;
+    courseExtraSpaceX = (courseSolvepadSize.width - courseImageWidth) / 2;
     myImageWidth = mySolvepadSize.height * sheetImageRatio;
     myExtraSpaceX = (mySolvepadSize.width - myImageWidth) / 2;
-    scaleImageX = myImageWidth / tutorImageWidth;
-    scaleX = mySolvepadSize.width / tutorSolvepadSize.width;
-    scaleY = mySolvepadSize.height / tutorSolvepadSize.height;
+    courseScaleImageX = myImageWidth / courseImageWidth;
+    courseScaleX = mySolvepadSize.width / courseSolvepadSize.width;
+    courseScaleY = mySolvepadSize.height / courseSolvepadSize.height;
+    populateCourseNote(_courseData);
+  }
+
+  void initQuestionSolvepadScaling() {
+    questionImageWidth = questionSolvepadSize.height * sheetImageRatio;
+    questionExtraSpaceX = (questionSolvepadSize.width - questionImageWidth) / 2;
+    myImageWidth = mySolvepadSize.height * sheetImageRatio;
+    myExtraSpaceX = (mySolvepadSize.width - myImageWidth) / 2;
+    questionScaleImageX = myImageWidth / questionImageWidth;
+    questionScaleX = mySolvepadSize.width / questionSolvepadSize.width;
+    questionScaleY = mySolvepadSize.height / questionSolvepadSize.height;
+  }
+
+  Offset questionScaleOffset(Offset offset) {
+    return Offset(
+        (offset.dx - questionExtraSpaceX) * questionScaleImageX + myExtraSpaceX,
+        offset.dy * questionScaleY);
+  }
+  double questionScaleScrollX(double scrollX) => scrollX * questionScaleX;
+  double questionScaleScrollY(double scrollY) => scrollY * questionScaleY;
+
+  Offset courseScaleOffset(Offset offset) {
+    return Offset(
+        (offset.dx - courseExtraSpaceX) * courseScaleImageX + myExtraSpaceX,
+        offset.dy * courseScaleY);
+  }
+  double courseScaleScrollX(double scrollX) => scrollX * courseScaleX;
+  double courseScaleScrollY(double scrollY) => scrollY * courseScaleY;
+
+  void populateCourseNote(Map<String, dynamic> jsonData) {
+    int questionIndex = 0;
+    while (questionIndex < jsonData['actions'].length) {
+      if (_courseData['actions'][questionIndex]['time'] <= widget.courseTime) {
+        executeCourseAction(jsonData['actions'][questionIndex]);
+        questionIndex++;
+      } else {
+        break;
+      }
+    }
+  }
+
+  Future<void> executeCourseAction(Map<String, dynamic> action) async {
+    int currentCoursePointIndex = 0;
+    switch (action['type']) {
+      case 'start-recording':
+        _coursePage = action['page'];
+        break;
+      case 'change-page':
+        _coursePage = action['data'];
+        break;
+      case 'stop-recording':
+        break;
+      case 'scroll-zoom':
+        break;
+      case 'drawing':
+        List<dynamic> points = action['data']['points'];
+        while (currentCoursePointIndex < points.length) {
+          drawCoursePoint(
+              points[currentCoursePointIndex],
+              action['data']['tool'],
+              action['data']['color'],
+              action['data']['strokeWidth']);
+          currentCoursePointIndex++;
+        }
+        currentCoursePointIndex = 0;
+        drawCourseNull(action['data']['tool']);
+        break;
+      case 'erasing':
+        for (var eraseAction in action['data']) {
+          if (eraseAction['action'] == 'moves') {
+            int movingIndex = 0;
+            while (movingIndex < eraseAction['points'].length) {
+              setState(() {
+                _courseEraserPoints[_currentPage] = courseScaleOffset(Offset(
+                    eraseAction['points'][movingIndex]['x'],
+                    eraseAction['points'][movingIndex]['y']));
+              });
+              movingIndex++;
+            }
+          } // move
+          else if (eraseAction['action'] == 'erase') {
+            List<SolvepadStroke?> pointStack =
+            _coursePenPoints[_coursePage];
+            if (eraseAction['mode'] == "pen") {
+              pointStack = _coursePenPoints[_coursePage];
+            } else if (eraseAction['mode'] == "high") {
+              pointStack = _courseHighlighterPoints[_coursePage];
+            }
+            setState(() {
+              var start = eraseAction['prev'].clamp(0, pointStack.length);
+              var end = eraseAction['next'].clamp(start, pointStack.length);
+              pointStack.removeRange(start, end);
+            });
+          } // erase
+        }
+        setState(() {
+          _courseEraserPoints[_coursePage] = const Offset(-100, -100);
+        });
+        break;
+    }
+  }
+
+  void drawCoursePoint(
+      Map<String, dynamic> point, String tool, String color, double stroke) {
+    if (tool == "DrawingMode.pen") {
+      _coursePenPoints[_coursePage].add(SolvepadStroke(
+        courseScaleOffset(Offset(point['x'], point['y'])),
+        Color(int.parse(color, radix: 16)),
+        stroke,
+      ));
+      setState(() {});
+    } // pen
+    else if (tool == "DrawingMode.highlighter") {
+      _courseHighlighterPoints[_coursePage].add(SolvepadStroke(
+        courseScaleOffset(Offset(point['x'], point['y'])),
+        Color(int.parse(color, radix: 16)),
+        stroke,
+      ));
+      setState(() {});
+    } // high
+  }
+
+  void drawCourseNull(String tool) {
+    if (tool == "DrawingMode.pen") {
+      _coursePenPoints[_coursePage].add(null);
+    } else if (tool == "DrawingMode.highlighter") {
+      _courseHighlighterPoints[_coursePage].add(null);
+    }
+  }
+
+  void drawAnswerPoint(
+      Map<String, dynamic> point, String tool, String color, double stroke) {
+    final buckets = _pickStrokeBucket(tool, true);
+    buckets[_currentPage].add(SolvepadStroke(
+      questionScaleOffset(Offset(point['x'], point['y'])),
+      Color(int.parse(color, radix: 16)),
+      stroke,
+    ));
+    setState(() {});
+  }
+
+  void drawAnswerNull(String tool) {
+    final buckets = _pickStrokeBucket(tool, true);
+    buckets[_currentPage].add(null);
   }
 
   @override
@@ -311,8 +456,6 @@ class _RecordAnswerState extends State<RecordAnswer> {
     // ]);
     _mPlayer!.closePlayer();
     _mPlayer = null;
-    _mRecorder!.closeRecorder();
-    _mRecorder = null;
     _pageController.dispose();
     _recordTimer?.cancel();
     _sliderTimer?.cancel();
@@ -320,12 +463,12 @@ class _RecordAnswerState extends State<RecordAnswer> {
     super.dispose();
   }
 
-  Future<bool> _onWillPopScope() async {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-    return true;
+  Future<void> _setPortraitOnPop(bool didPop, Object? result) async {
+    if (!didPop) return; // pop didn’t happen, nothing to do
+    // await SystemChrome.setPreferredOrientations([
+    //   DeviceOrientation.portraitUp,
+    //   DeviceOrientation.portraitDown,
+    // ]);
   }
 
   void updateRatio(String url) {
@@ -346,6 +489,13 @@ class _RecordAnswerState extends State<RecordAnswer> {
       _highlighterPoints.add([]);
       _eraserPoints.add(const Offset(-100, -100));
       _replayPoints.add([]);
+      _answerPenPoints.add([]);
+      _answerLaserPoints.add([]);
+      _answerHighlighterPoints.add([]);
+      _answerEraserPoints.add(const Offset(-100, -100));
+      _coursePenPoints.add([]);
+      _courseHighlighterPoints.add([]);
+      _courseEraserPoints.add(const Offset(-100, -100));
     });
   }
 
@@ -357,25 +507,6 @@ class _RecordAnswerState extends State<RecordAnswer> {
       _currentPage = page;
       _penPoints[_currentPage].add(null);
     });
-    if (isRecording) {
-      if (currentScrollZoom.isNotEmpty) {
-        addScrollZoom(currentScrollZoom, currentScrollZoom[0].timestamp);
-        currentScrollZoom.clear();
-      }
-      _actions.add({
-        "time": solveStopwatch.elapsed.inMilliseconds,
-        "type": "change-page",
-        "data": page,
-      });
-    }
-  }
-
-  String _formatElapsedTime(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String hours = twoDigits(duration.inHours);
-    String minutes = twoDigits(duration.inMinutes.remainder(60));
-    String seconds = twoDigits(duration.inSeconds.remainder(60));
-    return 'Recording $hours:$minutes:$seconds';
   }
 
   String _formatReplayElapsedTime(Duration duration) {
@@ -409,8 +540,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
     } // high
   }
 
-  void removePointStack(List<SolvepadStroke?> pointStack, int index,
-      {String? removeMode}) {
+  void removePointStack(List<SolvepadStroke?> pointStack, int index, {String? removeMode}) {
     int prevNullIndex = -1;
     int nextNullIndex = -1;
     for (int i = index; i >= 0; i--) {
@@ -430,14 +560,6 @@ class _RecordAnswerState extends State<RecordAnswer> {
       setState(() {
         pointStack.removeRange(prevNullIndex, nextNullIndex);
       });
-      if (removeMode != null) {
-        currentEraserStroke.add([
-          removeMode,
-          prevNullIndex,
-          nextNullIndex,
-          solveStopwatch.elapsed.inMilliseconds
-        ]);
-      }
     }
   }
 
@@ -451,101 +573,8 @@ class _RecordAnswerState extends State<RecordAnswer> {
     });
   }
 
-  void initSolvepadData() {
-    _data = {
-      "version": "2.0.0",
-      "solvepadWidth": mySolvepadSize.width,
-      "solvepadHeight": mySolvepadSize.height,
-      "metadata": {
-        "courseId": widget.course.id,
-        "tutorId": widget.course.tutorId,
-        "duration": 0,
-      },
-      "actions": []
-    };
-    _actions = (_data['actions'] as List).cast<Map<String, dynamic>>();
-    _actions.add({
-      "time": solveStopwatch.elapsed.inMilliseconds,
-      "type": "start-recording",
-      "page": _currentPage,
-      "scrollX": currentScrollX,
-      "scrollY": currentScrollY,
-      "scale": currentScale,
-    });
-  }
-
-  void _initRecord() async {
-    solveStopwatch.reset();
-    solveStopwatch.start();
-    setState(() {
-      isRecording = true;
-    });
-    _startRecordTimer();
-    initSolvepadData();
-    if (_mPath.isEmpty) {
-      await initRecorderPath();
-    }
-  }
-
-  void _startRecordTimer() {
-    _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _formattedElapsedTime = _formatElapsedTime(solveStopwatch.elapsed);
-      });
-    });
-  }
-
-  void _stopSolvePadRecord() {
-    isRecording = false;
-    _mode = DrawingMode.drag;
-    if (currentScrollZoom.isNotEmpty) {
-      addScrollZoom(currentScrollZoom, currentScrollZoom[0].timestamp);
-      currentScrollZoom.clear();
-    }
-    _actions.add({
-      "time": solveStopwatch.elapsed.inMilliseconds,
-      "type": "stop-recording",
-      "data": null
-    });
-    replayDuration = solveStopwatch.elapsed.inMilliseconds;
-    _data['metadata']['duration'] = replayDuration;
-    solveStopwatch.reset();
-    _stopRecordTimer();
-    setState(() {});
-  }
-
-  void _stopRecordTimer() {
-    _recordTimer?.cancel();
-    _recordTimer = null;
-    _formattedElapsedTime = 'Record end';
-    setState(() {
-      isRecordEnd = true;
-    });
-  }
-
-  void addDrawing(List<StrokeStamp> strokeStamp, int initTime) {
-    if (isRecording) {
-      _actions.add({
-        "time": initTime,
-        "type": "drawing",
-        "data": {
-          "tool": _mode.toString(),
-          "color": _strokeColors[_selectedIndexColors].value.toRadixString(16),
-          "strokeWidth": _strokeWidths[_selectedIndexLines],
-          "points": strokeStamp
-              .map((timedOffset) => {
-                    'x': double.parse(timedOffset.offset.dx.toStringAsFixed(2)),
-                    'y': double.parse(timedOffset.offset.dy.toStringAsFixed(2)),
-                    'time': timedOffset.timestamp,
-                  })
-              .toList()
-        }
-      });
-    }
-  }
-
   void addErasing(List<dynamic> eraserStroke) {
-    if (isRecording && eraserStroke.isNotEmpty) {
+    if (eraserStroke.isNotEmpty) {
       List<Map<String, dynamic>> formattedActions = [];
       List<Map<String, dynamic>> moveActions = [];
 
@@ -593,20 +622,6 @@ class _RecordAnswerState extends State<RecordAnswer> {
   void addScrollZoom(List<ScrollZoomStamp> scrollZoomStamp, int initTime) {
     log('add scroll-zoom');
     // log(scrollZoomStamp.toString());
-    if (isRecording) {
-      _actions.add({
-        "time": initTime,
-        "type": "scroll-zoom",
-        "data": scrollZoomStamp
-            .map((timedScroll) => {
-                  'x': double.parse(timedScroll.x.toStringAsFixed(2)),
-                  'y': double.parse(timedScroll.y.toStringAsFixed(2)),
-                  'scale': double.parse(timedScroll.scale.toStringAsFixed(2)),
-                  'time': timedScroll.timestamp,
-                })
-            .toList(),
-      });
-    }
   }
 
   // ---------- FUNCTION: solve pad core
@@ -622,6 +637,15 @@ class _RecordAnswerState extends State<RecordAnswer> {
     }
   }
 
+  void clearQuestionPoint() {
+    for (var point in _answerPenPoints) {
+      point.clear();
+    }
+    for (var point in _answerHighlighterPoints) {
+      point.clear();
+    }
+  }
+
   void clearZoomPosition() {
     for (int i = 0; i < _transformationController.length; i++) {
       _transformationController[i].value = Matrix4.identity()
@@ -632,81 +656,82 @@ class _RecordAnswerState extends State<RecordAnswer> {
 
   void pauseReplay() {
     log('pause replay');
-    setState(() {
-      isReplaying = false;
-    });
     pauseAudioPlayer();
-    solveStopwatch.stop();
+    answerStopwatch.stop();
   }
 
   void resumeReplay() {
     log('resume replay');
-    setState(() {
-      isReplaying = true;
-    });
     resumeAudioPlayer();
-    solveStopwatch.start();
+    answerStopwatch.start();
   }
 
-  void _initReplay() {
-    log('init replay');
+  void pauseAnswer() {
+    log('pause replay');
+    pauseAudioPlayer();
+    questionStopwatch.stop();
+  }
+
+  void resumeAnswer() {
+    log('resume replay');
+    resumeAudioPlayer();
+    questionStopwatch.start();
+  }
+
+  void _initAnswer() {
     setState(() {
-      isReplaying = true;
-      isReplayEnd = false;
-      clearReplayPoint();
+      clearQuestionPoint();
       clearZoomPosition();
     });
-    _replay();
-    playAudioPlayer();
+    _playAnswer();
+    playAnswerAudioPlayer();
   }
 
-  Future<void> _replay() async {
-    log('_replay()');
-    solveStopwatch.start();
+  void endAnswer() {
+    setState(() {
+      isAnswerPlaying = false;
+    });
+    stopAudioPlayer();
+    _sliderTimer?.cancel();
+    questionStopwatch.reset();
+    currentReplayIndex = 0;
+    log(' --------- end question ----------');
+  }
+
+  Future<void> _playAnswer() async {
+    questionStopwatch.start();
     _sliderTimer = Timer.periodic(const Duration(milliseconds: 10), (timer) {
       setState(() {
-        replayProgress = solveStopwatch.elapsed.inMilliseconds.toDouble();
+        replayProgress = questionStopwatch.elapsed.inMilliseconds.toDouble();
         if (replayProgress >= replayDuration.toDouble()) {
           replayProgress = replayDuration.toDouble();
           timer.cancel();
         }
       });
     });
-
-    while (currentReplayIndex < _data['actions'].length) {
+    while (currentReplayIndex < _questionData['actions'].length) {
       await Future.delayed(const Duration(milliseconds: 0), () async {
-        if (solveStopwatch.elapsed.inMilliseconds >=
-            _data['actions'][currentReplayIndex]['time']) {
-          await executeReplayAction(_data['actions'][currentReplayIndex]);
+        if (questionStopwatch.elapsed.inMilliseconds >=
+            _questionData['actions'][currentReplayIndex]['time']) {
+          await executePlayAnswerAction(
+              _questionData['actions'][currentReplayIndex]);
           currentReplayIndex++;
         }
       });
     }
-
-    endReplay();
+    endAnswer();
   }
 
-  void endReplay() {
-    setState(() {
-      isReplaying = false;
-      isReplayEnd = true;
-    });
-    stopAudioPlayer();
-    _sliderTimer?.cancel();
-    solveStopwatch.reset();
-    currentReplayIndex = 0;
-    log(' --------- end loop ----------');
-  }
-
-  Future<void> executeReplayAction(Map<String, dynamic> action) async {
+  Future<void> executePlayAnswerAction(Map<String, dynamic> action) async {
     switch (action['type']) {
       case 'start-recording':
         var page = action['page'];
-        _pageController.animateToPage(
+        await _pageController.animateToPage(
           page,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
+        await WidgetsBinding.instance.endOfFrame;
         _transformationController[page].value = Matrix4.identity()
           ..translate(action['scrollX'] / 2, action['scrollY'])
           ..scale(action['scale']);
@@ -724,7 +749,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
         List<dynamic> scrollAction = action['data'];
         while (currentReplayScrollIndex < scrollAction.length) {
           await Future.delayed(const Duration(milliseconds: 0), () {
-            if (solveStopwatch.elapsed.inMilliseconds >=
+            if (questionStopwatch.elapsed.inMilliseconds >=
                 scrollAction[currentReplayScrollIndex]['time']) {
               _transformationController[_currentPage].value = Matrix4.identity()
                 ..translate(scrollAction[currentReplayScrollIndex]['x'],
@@ -740,19 +765,20 @@ class _RecordAnswerState extends State<RecordAnswer> {
         List<dynamic> points = action['data']['points'];
         while (currentReplayPointIndex < points.length) {
           await Future.delayed(const Duration(milliseconds: 0), () {
-            if (solveStopwatch.elapsed.inMilliseconds >=
+            if (questionStopwatch.elapsed.inMilliseconds >=
                 points[currentReplayPointIndex]['time']) {
-              drawReplayPoint(
-                  points[currentReplayPointIndex],
-                  action['data']['tool'],
-                  action['data']['color'],
-                  action['data']['strokeWidth']);
+              drawAnswerPoint(
+                points[currentReplayPointIndex],
+                action['data']['tool'],
+                action['data']['color'],
+                action['data']['strokeWidth'],
+              );
               currentReplayPointIndex++;
             }
           });
         }
         currentReplayPointIndex = 0;
-        drawReplayNull(action['data']['tool']);
+        drawAnswerNull(action['data']['tool']);
         break;
       case 'erasing':
         for (var eraseAction in action['data']) {
@@ -760,10 +786,10 @@ class _RecordAnswerState extends State<RecordAnswer> {
             int movingIndex = 0;
             while (movingIndex < eraseAction['points'].length) {
               await Future.delayed(const Duration(milliseconds: 0), () {
-                if (solveStopwatch.elapsed.inMilliseconds >=
+                if (questionStopwatch.elapsed.inMilliseconds >=
                     eraseAction['points'][movingIndex]['time']) {
                   setState(() {
-                    _eraserPoints[_currentPage] = Offset(
+                    _answerEraserPoints[_currentPage] = Offset(
                         eraseAction['points'][movingIndex]['x'],
                         eraseAction['points'][movingIndex]['y']);
                   });
@@ -773,54 +799,57 @@ class _RecordAnswerState extends State<RecordAnswer> {
             }
           } // move
           else if (eraseAction['action'] == 'erase') {
-            while (
-                solveStopwatch.elapsed.inMilliseconds < eraseAction['time']) {
+            while (questionStopwatch.elapsed.inMilliseconds <
+                eraseAction['time']) {
               await Future.delayed(const Duration(milliseconds: 0), () {});
             }
-            List<SolvepadStroke?> pointStack = _penPoints[_currentPage];
             if (eraseAction['mode'] == "pen") {
-              pointStack = _penPoints[_currentPage];
+              setState(() {
+                _answerPenPoints[_currentPage]
+                    .removeRange(eraseAction['prev'], eraseAction['next']);
+              });
             } // pen
             else if (eraseAction['mode'] == "high") {
-              pointStack = _highlighterPoints[_currentPage];
-            } // high
-            setState(() {
-              pointStack.removeRange(eraseAction['prev'], eraseAction['next']);
-            });
+              setState(() {
+                _answerHighlighterPoints[_currentPage]
+                    .removeRange(eraseAction['prev'], eraseAction['next']);
+              });
+            }
           } // erase
         }
         setState(() {
-          _eraserPoints[_currentPage] = const Offset(-100, -100);
+          _answerEraserPoints[_currentPage] = const Offset(-100, -100);
         });
         break;
     }
   }
 
-  void drawReplayPoint(
-      Map<String, dynamic> point, String tool, String color, double stroke) {
-    if (tool == "DrawingMode.pen") {
-      _penPoints[_currentPage].add(SolvepadStroke(
-        Offset(point['x'], point['y']),
-        Color(int.parse(color, radix: 16)),
-        stroke,
-      ));
-      setState(() {});
-    } else if (tool == "DrawingMode.highlighter") {
-      _highlighterPoints[_currentPage].add(SolvepadStroke(
-        Offset(point['x'], point['y']),
-        Color(int.parse(color, radix: 16)),
-        stroke,
-      ));
-      setState(() {});
+  List<List<SolvepadStroke?>> _pickStrokeBucket(String tool, bool isQuestion) {
+    switch (tool) {
+      case 'DrawingMode.pen':
+        return isQuestion ? _answerPenPoints : _penPoints;
+      case 'DrawingMode.highlighter':
+        return isQuestion ? _answerHighlighterPoints : _highlighterPoints;
+      default:
+        return isQuestion ? _answerPenPoints : _penPoints;
     }
   }
 
+  void drawReplayPoint(
+      Map<String, dynamic> point, String tool, String color, double stroke) {
+    final buckets = _pickStrokeBucket(tool, false);
+    setState(() {
+      buckets[_currentPage].add(SolvepadStroke(
+        Offset(point['x'], point['y']),
+        Color(int.parse(color, radix: 16)),
+        stroke,
+      ));
+    });
+  }
+
   void drawReplayNull(String tool) {
-    if (tool == "DrawingMode.pen") {
-      _penPoints[_currentPage].add(null);
-    } else if (tool == "DrawingMode.highlighter") {
-      _highlighterPoints[_currentPage].add(null);
-    }
+    final buckets = _pickStrokeBucket(tool, false);
+    buckets[_currentPage].add(null);
   }
 
   Future<void> writeToFile(String fileName, dynamic data) async {
@@ -832,71 +861,16 @@ class _RecordAnswerState extends State<RecordAnswer> {
   }
 
   // ---------- FUNCTION: recording and playback
-  Future<void> openTheRecorder() async {
-    if (!kIsWeb) {
-      var status = await Permission.microphone.request();
-      if (status != PermissionStatus.granted) {
-        throw RecordingPermissionException('Microphone permission not granted');
-      }
-    }
-    await _mRecorder!.openRecorder();
-    if (!await _mRecorder!.isEncoderSupported(_codec) && kIsWeb) {
-      _codec = Codec.opusWebM;
-      _mPath = 'tau_file.webm';
-      if (!await _mRecorder!.isEncoderSupported(_codec) && kIsWeb) {
-        _mRecorderIsInited = true;
-        return;
-      }
-    }
-    final session = await AudioSession.instance;
-    await session.configure(AudioSessionConfiguration(
-      avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
-      avAudioSessionCategoryOptions:
-          AVAudioSessionCategoryOptions.allowBluetooth |
-              AVAudioSessionCategoryOptions.defaultToSpeaker,
-      avAudioSessionMode: AVAudioSessionMode.spokenAudio,
-      avAudioSessionRouteSharingPolicy:
-          AVAudioSessionRouteSharingPolicy.defaultPolicy,
-      avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
-      androidAudioAttributes: const AndroidAudioAttributes(
-        contentType: AndroidAudioContentType.speech,
-        flags: AndroidAudioFlags.none,
-        usage: AndroidAudioUsage.voiceCommunication,
-      ),
-      androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
-      androidWillPauseWhenDucked: true,
-    ));
-
-    _mRecorderIsInited = true;
-  }
-
-  void record() {
-    _mRecorder!
-        .startRecorder(
-      toFile: _mPath,
-      codec: _codec,
-      audioSource: AudioSource.microphone,
-    )
-        .then((value) {
-      setState(() {});
-    });
-  }
-
-  void stopRecorder() async {
-    await _mRecorder!.stopRecorder().then((value) {
-      setState(() {
-        //var url = value;
-        _mPlaybackReady = true;
-      });
-    });
-  }
-
   void playAudioPlayer() {
     assert(_mPlayerIsInited &&
-        _mPlaybackReady &&
-        _mRecorder!.isStopped &&
-        _mPlayer!.isStopped);
-    _mPlayer!.startPlayer(fromURI: _mPath);
+        _mPlaybackReady);
+    _mPlayer!.startPlayer(fromURI: answerVoicePath);
+  }
+
+  void playAnswerAudioPlayer() {
+    assert(_mPlayerIsInited &&
+        _mPlaybackReady);
+    _mPlayer!.startPlayer(fromURI: questionVoicePath);
   }
 
   void stopAudioPlayer() {
@@ -911,29 +885,18 @@ class _RecordAnswerState extends State<RecordAnswer> {
     _mPlayer!.resumePlayer();
   }
 
-  void getRecorderFn() {
-    if (!_mRecorderIsInited || !_mPlayer!.isStopped) {
-      log('return from 1st condition', name: "getRecorderFn");
-      return;
-    }
-    if (_mRecorder!.isStopped) {
-      record();
-    } else {
-      stopRecorder();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPopScope,
-      child: isCourseLoaded
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: _setPortraitOnPop,
+      child: isDocLoaded
           ? Scaffold(
-              backgroundColor: CustomColors.grayCFCFCF,
-              body: !Responsive.isMobile(context)
-                  ? _buildTablet()
-                  : _buildMobile(),
-            )
+        backgroundColor: CustomColors.grayCFCFCF,
+        body: !Responsive.isMobile(context)
+            ? _buildTablet()
+            : _buildMobile(),
+      )
           : const LoadingScreen(),
     );
   }
@@ -959,7 +922,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
               ),
             ],
           ),
-          if (isRecordEnd) slider(),
+          // if (isRecordEnd) slider(),
           if (openColors)
             Positioned(
               left: 150,
@@ -1105,10 +1068,10 @@ class _RecordAnswerState extends State<RecordAnswer> {
                 alwaysShowTooltip: true,
                 direction: FlutterSliderTooltipDirection.top,
                 positionOffset:
-                    FlutterSliderTooltipPositionOffset(top: -5, left: -40),
+                FlutterSliderTooltipPositionOffset(top: -5, left: -40),
                 boxStyle: FlutterSliderTooltipBox(
                     decoration:
-                        BoxDecoration(color: Colors.white.withOpacity(0))),
+                    BoxDecoration(color: Colors.white.withOpacity(0))),
                 format: (value) {
                   return _formatReplayElapsedTime(
                       Duration(milliseconds: double.parse(value).round()));
@@ -1126,7 +1089,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
               onDragging: (handlerIndex, lowerValue, upperValue) {
                 var seekPosition = Duration(milliseconds: lowerValue.round());
                 if (lowerValue > replayProgress) {
-                  solveStopwatch.jumpTo(seekPosition);
+                  answerStopwatch.jumpTo(seekPosition);
                   _mPlayer!.seekToPlayer(seekPosition);
                   setState(() {});
                 }
@@ -1156,413 +1119,357 @@ class _RecordAnswerState extends State<RecordAnswer> {
     return Expanded(
       child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-        double solvepadWidth = constraints.maxWidth;
-        double solvepadHeight = constraints.maxHeight;
-        currentScrollX = (-1 * solvepadWidth);
-        if (mySolvepadSize.width != solvepadWidth) {
-          mySolvepadSize = Size(solvepadWidth, solvepadHeight);
-        }
-        return Stack(children: [
-          PageView.builder(
-            onPageChanged: _onPageViewChange,
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(),
-            scrollDirection: Axis.vertical,
-            itemCount: _pages.length,
-            itemBuilder: (context, index) {
-              if (index >= _transformationController.length) {
-                _transformationController.add(TransformationController());
-                _transformationController[index].value = Matrix4.identity()
-                  ..scale(2.0)
-                  ..translate(-1 * solvepadWidth / 4, 0);
-              }
-              return InteractiveViewer(
-                transformationController: _transformationController[index],
-                alignment: const Alignment(-1, -1),
-                minScale: 1.0,
-                maxScale: 4.0,
-                onInteractionUpdate: (ScaleUpdateDetails details) {
-                  var translation =
-                      _transformationController[index].value.getTranslation();
-                  double scale = _transformationController[index]
-                      .value
-                      .getMaxScaleOnAxis();
-                  double originalTranslationX = translation.x;
-                  double originalTranslationY = translation.y;
-                  if (isRecording && _mode == DrawingMode.drag) {
-                    currentScrollZoom.add(ScrollZoomStamp(
-                        originalTranslationX,
-                        originalTranslationY,
-                        scale,
-                        solveStopwatch.elapsed.inMilliseconds));
-                  } else {
-                    currentScale = scale;
-                    currentScrollX = originalTranslationX;
-                    currentScrollY = originalTranslationY;
+            double solvepadWidth = constraints.maxWidth;
+            double solvepadHeight = constraints.maxHeight;
+            currentScrollX = (-1 * solvepadWidth);
+            if (mySolvepadSize.width != solvepadWidth) {
+              mySolvepadSize = Size(solvepadWidth, solvepadHeight);
+              log('my solvepad size: $mySolvepadSize');
+            }
+            return Stack(children: [
+              PageView.builder(
+                onPageChanged: _onPageViewChange,
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                scrollDirection: Axis.vertical,
+                itemCount: _pages.length,
+                itemBuilder: (context, index) {
+                  if (index >= _transformationController.length) {
+                    _transformationController.add(TransformationController());
+                    _transformationController[index].value = Matrix4.identity()
+                      ..scale(2.0)
+                      ..translate(-1 * solvepadWidth / 4, 0);
                   }
-                },
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Image.network(
-                        _pages[index],
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        ignoring: _mode == DrawingMode.drag,
-                        child: GestureDetector(
-                          onPanDown: (_) {},
-                          child: Listener(
-                            onPointerDown: (details) {
-                              if (activePointerId != null) return;
-                              if (!isRecording) return;
-                              activePointerId = details.pointer;
-                              if (details.kind ==
-                                  touch_ui.PointerDeviceKind.stylus) {
-                                _isStylusActive = true;
-                              }
-                              if (_isStylusActive &&
-                                  details.kind ==
-                                      touch_ui.PointerDeviceKind.touch) {
-                                return;
-                              }
-                              switch (_mode) {
-                                case DrawingMode.pen:
-                                  currentStroke.add(StrokeStamp(
-                                      details.localPosition,
-                                      solveStopwatch.elapsed.inMilliseconds));
-                                  _penPoints[_currentPage].add(
-                                    SolvepadStroke(
-                                        details.localPosition,
-                                        _strokeColors[_selectedIndexColors],
-                                        _strokeWidths[_selectedIndexLines]),
-                                  );
-                                  break;
-                                case DrawingMode.laser:
-                                  _laserPoints[_currentPage].add(
-                                    SolvepadStroke(
-                                        details.localPosition,
-                                        _strokeColors[_selectedIndexColors],
-                                        _strokeWidths[_selectedIndexLines]),
-                                  );
-                                  _laserDrawing();
-                                  break;
-                                case DrawingMode.highlighter:
-                                  currentStroke.add(StrokeStamp(
-                                      details.localPosition,
-                                      solveStopwatch.elapsed.inMilliseconds));
-                                  _highlighterPoints[_currentPage].add(
-                                    SolvepadStroke(
-                                        details.localPosition,
-                                        _strokeColors[_selectedIndexColors],
-                                        _strokeWidths[_selectedIndexLines]),
-                                  );
-                                  break;
-                                case DrawingMode.eraser:
-                                  currentEraserStroke.add([
-                                    details.localPosition,
-                                    solveStopwatch.elapsed.inMilliseconds
-                                  ]);
-                                  _eraserPoints[_currentPage] =
-                                      details.localPosition;
-                                  int penHit = _penPoints[_currentPage]
-                                      .indexWhere((point) =>
-                                          (point?.offset != null) &&
+                  return InteractiveViewer(
+                    transformationController: _transformationController[index],
+                    alignment: const Alignment(-1, -1),
+                    minScale: 1.0,
+                    maxScale: 4.0,
+                    onInteractionUpdate: (ScaleUpdateDetails details) {
+                      var translation =
+                      _transformationController[index].value.getTranslation();
+                      double scale = _transformationController[index]
+                          .value
+                          .getMaxScaleOnAxis();
+                      double originalTranslationX = translation.x;
+                      double originalTranslationY = translation.y;
+                      if (_mode == DrawingMode.drag) {
+                      } else {
+                        currentScale = scale;
+                        currentScrollX = originalTranslationX;
+                        currentScrollY = originalTranslationY;
+                      }
+                    },
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Image.network(
+                            _pages[index],
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            ignoring: _mode == DrawingMode.drag,
+                            child: GestureDetector(
+                              onPanDown: (_) {},
+                              child: Listener(
+                                onPointerDown: (details) {
+                                  if (activePointerId != null) return;
+                                  activePointerId = details.pointer;
+                                  if (details.kind ==
+                                      touch_ui.PointerDeviceKind.stylus) {
+                                    _isStylusActive = true;
+                                  }
+                                  if (_isStylusActive &&
+                                      details.kind ==
+                                          touch_ui.PointerDeviceKind.touch) {
+                                    return;
+                                  }
+                                  switch (_mode) {
+                                    case DrawingMode.pen:
+                                      _penPoints[_currentPage].add(
+                                        SolvepadStroke(
+                                            details.localPosition,
+                                            _strokeColors[_selectedIndexColors],
+                                            _strokeWidths[_selectedIndexLines]),
+                                      );
+                                      break;
+                                    case DrawingMode.laser:
+                                      _laserPoints[_currentPage].add(
+                                        SolvepadStroke(
+                                            details.localPosition,
+                                            _strokeColors[_selectedIndexColors],
+                                            _strokeWidths[_selectedIndexLines]),
+                                      );
+                                      _laserDrawing();
+                                      break;
+                                    case DrawingMode.highlighter:
+                                      _highlighterPoints[_currentPage].add(
+                                        SolvepadStroke(
+                                            details.localPosition,
+                                            _strokeColors[_selectedIndexColors],
+                                            _strokeWidths[_selectedIndexLines]),
+                                      );
+                                      break;
+                                    case DrawingMode.eraser:
+                                      _eraserPoints[_currentPage] =
+                                          details.localPosition;
+                                      int penHit = _penPoints[_currentPage]
+                                          .indexWhere((point) =>
+                                      (point?.offset != null) &&
                                           sqrDistanceBetween(point!.offset,
-                                                  details.localPosition) <=
+                                              details.localPosition) <=
                                               100);
-                                  int highlightHit =
+                                      int highlightHit =
                                       _highlighterPoints[_currentPage]
                                           .indexWhere((point) =>
-                                              (point?.offset != null) &&
-                                              sqrDistanceBetween(point!.offset,
-                                                      details.localPosition) <=
-                                                  100);
-                                  if (penHit != -1) {
-                                    doErase(penHit, DrawingMode.pen);
-                                  }
-                                  if (highlightHit != -1) {
-                                    doErase(
-                                        highlightHit, DrawingMode.highlighter);
-                                  }
-                                  break;
-                                default:
-                                  break;
-                              }
-                            },
-                            onPointerMove: (details) {
-                              if (activePointerId != details.pointer) return;
-                              if (!isRecording) return;
-                              activePointerId = details.pointer;
-                              if (details.kind ==
-                                  touch_ui.PointerDeviceKind.stylus) {
-                                _isStylusActive = true;
-                              }
-                              if (_isStylusActive &&
-                                  details.kind ==
-                                      touch_ui.PointerDeviceKind.touch) {
-                                return;
-                              }
-                              switch (_mode) {
-                                case DrawingMode.pen:
-                                  currentStroke.add(StrokeStamp(
-                                      details.localPosition,
-                                      solveStopwatch.elapsed.inMilliseconds));
-                                  setState(() {
-                                    _penPoints[_currentPage].add(SolvepadStroke(
-                                        details.localPosition,
-                                        _strokeColors[_selectedIndexColors],
-                                        _strokeWidths[_selectedIndexLines]));
-                                  });
-                                  break;
-                                case DrawingMode.laser:
-                                  setState(() {
-                                    _laserPoints[_currentPage].add(
-                                      SolvepadStroke(
-                                          details.localPosition,
-                                          _strokeColors[_selectedIndexColors],
-                                          _strokeWidths[_selectedIndexLines]),
-                                    );
-                                  });
-                                  _laserDrawing();
-                                  break;
-                                case DrawingMode.highlighter:
-                                  currentStroke.add(StrokeStamp(
-                                      details.localPosition,
-                                      solveStopwatch.elapsed.inMilliseconds));
-                                  setState(() {
-                                    _highlighterPoints[_currentPage].add(
-                                      SolvepadStroke(
-                                          details.localPosition,
-                                          _strokeColors[_selectedIndexColors],
-                                          _strokeWidths[_selectedIndexLines]),
-                                    );
-                                  });
-                                  break;
-                                case DrawingMode.eraser:
-                                  currentEraserStroke.add([
-                                    details.localPosition,
-                                    solveStopwatch.elapsed.inMilliseconds
-                                  ]);
-                                  setState(() {
-                                    _eraserPoints[_currentPage] =
-                                        details.localPosition;
-                                  });
-                                  int penHit = _penPoints[_currentPage]
-                                      .indexWhere((point) =>
-                                          (point?.offset != null) &&
+                                      (point?.offset != null) &&
                                           sqrDistanceBetween(point!.offset,
-                                                  details.localPosition) <=
+                                              details.localPosition) <=
                                               100);
-                                  int highlightHit =
+                                      if (penHit != -1) {
+                                        doErase(penHit, DrawingMode.pen);
+                                      }
+                                      if (highlightHit != -1) {
+                                        doErase(
+                                            highlightHit, DrawingMode.highlighter);
+                                      }
+                                      break;
+                                    default:
+                                      break;
+                                  }
+                                },
+                                onPointerMove: (details) {
+                                  if (activePointerId != details.pointer) return;
+                                  activePointerId = details.pointer;
+                                  if (details.kind ==
+                                      touch_ui.PointerDeviceKind.stylus) {
+                                    _isStylusActive = true;
+                                  }
+                                  if (_isStylusActive &&
+                                      details.kind ==
+                                          touch_ui.PointerDeviceKind.touch) {
+                                    return;
+                                  }
+                                  switch (_mode) {
+                                    case DrawingMode.pen:
+                                      setState(() {
+                                        _penPoints[_currentPage].add(SolvepadStroke(
+                                            details.localPosition,
+                                            _strokeColors[_selectedIndexColors],
+                                            _strokeWidths[_selectedIndexLines]));
+                                      });
+                                      break;
+                                    case DrawingMode.laser:
+                                      setState(() {
+                                        _laserPoints[_currentPage].add(
+                                          SolvepadStroke(
+                                              details.localPosition,
+                                              _strokeColors[_selectedIndexColors],
+                                              _strokeWidths[_selectedIndexLines]),
+                                        );
+                                      });
+                                      _laserDrawing();
+                                      break;
+                                    case DrawingMode.highlighter:
+                                      setState(() {
+                                        _highlighterPoints[_currentPage].add(
+                                          SolvepadStroke(
+                                              details.localPosition,
+                                              _strokeColors[_selectedIndexColors],
+                                              _strokeWidths[_selectedIndexLines]),
+                                        );
+                                      });
+                                      break;
+                                    case DrawingMode.eraser:
+                                      setState(() {
+                                        _eraserPoints[_currentPage] =
+                                            details.localPosition;
+                                      });
+                                      int penHit = _penPoints[_currentPage]
+                                          .indexWhere((point) =>
+                                      (point?.offset != null) &&
+                                          sqrDistanceBetween(point!.offset,
+                                              details.localPosition) <=
+                                              100);
+                                      int highlightHit =
                                       _highlighterPoints[_currentPage]
                                           .indexWhere((point) =>
-                                              (point?.offset != null) &&
-                                              sqrDistanceBetween(point!.offset,
-                                                      details.localPosition) <=
-                                                  500);
-                                  if (penHit != -1) {
-                                    doErase(penHit, DrawingMode.pen);
+                                      (point?.offset != null) &&
+                                          sqrDistanceBetween(point!.offset,
+                                              details.localPosition) <=
+                                              500);
+                                      if (penHit != -1) {
+                                        doErase(penHit, DrawingMode.pen);
+                                      }
+                                      if (highlightHit != -1) {
+                                        doErase(
+                                            highlightHit, DrawingMode.highlighter);
+                                      }
+                                      break;
+                                    default:
+                                      break;
                                   }
-                                  if (highlightHit != -1) {
-                                    doErase(
-                                        highlightHit, DrawingMode.highlighter);
+                                },
+                                onPointerUp: (details) {
+                                  if (activePointerId != details.pointer) return;
+                                  activePointerId = null;
+                                  if (_isStylusActive &&
+                                      details.kind ==
+                                          touch_ui.PointerDeviceKind.touch) {
+                                    return;
                                   }
-                                  break;
-                                default:
-                                  break;
-                              }
-                            },
-                            onPointerUp: (details) {
-                              if (activePointerId != details.pointer) return;
-                              if (!isRecording) return;
-                              activePointerId = null;
-                              if (_isStylusActive &&
-                                  details.kind ==
-                                      touch_ui.PointerDeviceKind.touch) {
-                                return;
-                              }
-                              switch (_mode) {
-                                case DrawingMode.pen:
-                                  addDrawing(currentStroke,
-                                      currentStroke[0].timestamp);
-                                  currentStroke.clear();
-                                  _penPoints[_currentPage].add(null);
-                                  break;
-                                case DrawingMode.laser:
-                                  _laserPoints[_currentPage].add(null);
-                                  _laserTimer = Timer(
-                                      const Duration(milliseconds: 1500),
-                                      _stopLaserDrawing);
-                                  break;
-                                case DrawingMode.highlighter:
-                                  addDrawing(currentStroke,
-                                      currentStroke[0].timestamp);
-                                  currentStroke.clear();
-                                  _highlighterPoints[_currentPage].add(null);
-                                  break;
-                                case DrawingMode.eraser:
-                                  addErasing(currentEraserStroke);
-                                  currentEraserStroke.clear();
-                                  setState(() {
-                                    _eraserPoints[_currentPage] =
+                                  switch (_mode) {
+                                    case DrawingMode.pen:
+                                      _penPoints[_currentPage].add(null);
+                                      break;
+                                    case DrawingMode.laser:
+                                      _laserPoints[_currentPage].add(null);
+                                      _laserTimer = Timer(
+                                          const Duration(milliseconds: 1500),
+                                          _stopLaserDrawing);
+                                      break;
+                                    case DrawingMode.highlighter:
+                                      _highlighterPoints[_currentPage].add(null);
+                                      break;
+                                    case DrawingMode.eraser:
+                                      setState(() {
+                                        _eraserPoints[_currentPage] =
                                         const Offset(-100, -100);
-                                  });
-                                  break;
-                                default:
-                                  break;
-                              }
-                            },
-                            onPointerCancel: (details) {
-                              if (activePointerId != details.pointer) return;
-                              if (!isRecording) return;
-                              activePointerId = null;
-                              if (_isStylusActive &&
-                                  details.kind ==
-                                      touch_ui.PointerDeviceKind.touch) {
-                                return;
-                              }
-                              switch (_mode) {
-                                case DrawingMode.pen:
-                                  addDrawing(currentStroke,
-                                      currentStroke[0].timestamp);
-                                  currentStroke.clear();
-                                  _penPoints[_currentPage].add(null);
-                                  break;
-                                case DrawingMode.laser:
-                                  _laserPoints[_currentPage].add(null);
-                                  _laserTimer = Timer(
-                                      const Duration(milliseconds: 1500),
-                                      _stopLaserDrawing);
-                                  break;
-                                case DrawingMode.highlighter:
-                                  addDrawing(currentStroke,
-                                      currentStroke[0].timestamp);
-                                  currentStroke.clear();
-                                  _highlighterPoints[_currentPage].add(null);
-                                  break;
-                                case DrawingMode.eraser:
-                                  addErasing(currentEraserStroke);
-                                  currentEraserStroke.clear();
-                                  setState(() {
-                                    _eraserPoints[_currentPage] =
+                                      });
+                                      break;
+                                    default:
+                                      break;
+                                  }
+                                },
+                                onPointerCancel: (details) {
+                                  if (activePointerId != details.pointer) return;
+                                  activePointerId = null;
+                                  if (_isStylusActive &&
+                                      details.kind ==
+                                          touch_ui.PointerDeviceKind.touch) {
+                                    return;
+                                  }
+                                  switch (_mode) {
+                                    case DrawingMode.pen:
+                                      _penPoints[_currentPage].add(null);
+                                      break;
+                                    case DrawingMode.laser:
+                                      _laserPoints[_currentPage].add(null);
+                                      _laserTimer = Timer(
+                                          const Duration(milliseconds: 1500),
+                                          _stopLaserDrawing);
+                                      break;
+                                    case DrawingMode.highlighter:
+                                      _highlighterPoints[_currentPage].add(null);
+                                      break;
+                                    case DrawingMode.eraser:
+                                      setState(() {
+                                        _eraserPoints[_currentPage] =
                                         const Offset(-100, -100);
-                                  });
-                                  break;
-                                default:
-                                  break;
-                              }
-                            },
-                            child: CustomPaint(
-                              painter: SolvepadDrawerMarketplace(
-                                _penPoints[index],
-                                _replayPoints[index],
-                                _eraserPoints[index],
-                                _laserPoints[index],
-                                _highlighterPoints[index],
+                                      });
+                                      break;
+                                    default:
+                                      break;
+                                  }
+                                },
+                                child: CustomPaint(
+                                  painter: SolvepadDrawerViewQuestion(
+                                    _penPoints[index],
+                                    _replayPoints[index],
+                                    _eraserPoints[index],
+                                    _laserPoints[index],
+                                    _highlighterPoints[index],
+                                    _answerPenPoints[index],
+                                    _answerLaserPoints[index],
+                                    _answerHighlighterPoints[index],
+                                    _answerEraserPoints[index],
+                                    _coursePenPoints[index],
+                                    _courseHighlighterPoints[index],
+                                    _courseEraserPoints[index],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ]);
-      }),
+                  );
+                },
+              ),
+            ]);
+          }),
     );
   }
 
-  Widget recordCourseButton() {
+  Widget playAnswerButton() {
     return Center(
       child: SizedBox(
-        width: 70,
+        width: 50,
         height: 100,
         child: GestureDetector(
           onTap: () {
-            if (!isRecording) {
-              _initRecord();
-            } // Before record
-            else {
-              _stopSolvePadRecord();
-            }
-            getRecorderFn();
+            setPlayState();
           },
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 14.0),
+            margin: const EdgeInsets.symmetric(vertical: 6.0),
             decoration: BoxDecoration(
-                color: isRecording
+                color: isAnswerPlaying
                     ? CustomColors.gray363636
                     : CustomColors.redFF4201,
                 shape: BoxShape.circle),
-            child: isRecording
-                ? const Icon(
-                    Icons.stop,
-                    size: 20,
-                    color: CustomColors.white,
-                  )
-                : const Icon(
-                    Icons.radio_button_checked_rounded,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget replayRecordButton() {
-    return Center(
-      child: SizedBox(
-        width: 70,
-        height: 100,
-        child: GestureDetector(
-          onTap: () {
-            if (!isReplaying) {
-              if (isReplayEnd) {
-                _initReplay();
-              } else {
-                resumeReplay();
-              }
-            } // before replay
-            else {
-              pauseReplay();
-            }
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 14.0),
-            decoration: BoxDecoration(
-                color: isReplaying
-                    ? CustomColors.gray363636
-                    : CustomColors.redFF4201,
-                shape: BoxShape.circle),
-            child: isReplayLoading
+            child: !isAnswerLoaded
                 ? Image.asset(
-                    ImageAssets.loading,
-                    height: 44,
-                    width: 44,
-                  )
-                : isReplaying
-                    ? const Icon(
-                        Icons.pause,
-                        size: 20,
-                        color: CustomColors.white,
-                      )
-                    : const Icon(
-                        Icons.play_arrow,
-                        size: 20,
-                        color: Colors.white,
-                      ),
+              ImageAssets.loading,
+              height: 44,
+              width: 44,
+            )
+                : isAnswerPlaying
+                ? isAnswerPausing
+                ? const Icon(
+              Icons.play_arrow,
+              size: 20,
+              color: CustomColors.white,
+            )
+                : const Icon(
+              Icons.pause,
+              size: 20,
+              color: CustomColors.white,
+            )
+                : const Icon(
+              Icons.play_arrow,
+              size: 20,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void setPlayState() {
+    if (!isAnswerLoaded) return;
+    if (isAnswerPlaying) {
+      if (isAnswerPausing) {
+        setState(() {
+          isAnswerPausing = false;
+        });
+        resumeAnswer();
+      } else {
+        setState(() {
+          isAnswerPausing = true;
+        });
+        pauseAnswer();
+      }
+    } // before replay
+    else {
+      setState(() {
+        isAnswerPlaying = true;
+      });
+      _initAnswer();
+    }
   }
 
   Widget headerLayer1() {
@@ -1639,14 +1546,14 @@ class _RecordAnswerState extends State<RecordAnswer> {
                       color: CustomColors.whitePrimary,
                     ),
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 1, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 1, vertical: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         S.w(8),
                         InkWell(
-                          onTap: () => headerLayer1Mobile(),
+                          // onTap: () => headerLayer1Mobile(),
                           child: Image.asset(
                             ImageAssets.iconInfoPage,
                             height: 24,
@@ -1753,111 +1660,23 @@ class _RecordAnswerState extends State<RecordAnswer> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // InkWell(
-                //   onTap: () {
-                //     setState(() {
-                //       micEnable = !micEnable;
-                //     });
-                //   },
-                //   child: Image.asset(
-                //     micEnable ? ImageAssets.micEnable : ImageAssets.micDis,
-                //     height: 44,
-                //     width: 44,
-                //   ),
-                // ),
-                // S.w(defaultPadding),
-                // const DividerVer(),
-                if (!isRecordEnd) recordCourseButton(),
-                if (isRecordEnd) S.w(defaultPadding),
-                RichText(
-                  text: TextSpan(
-                    text: _formattedElapsedTime,
+                Flexible(
+                  child: Text('answer name',
                     style: CustomStyles.bold14RedF44336,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (isRecordEnd) replayRecordButton(),
               ],
             ),
           ),
-          Expanded(
-            child: isViewOnly
-                ? const SizedBox()
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        width: 220,
-                        height: 40,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isRecordEnd
-                                ? CustomColors.greenPrimary
-                                : CustomColors.inactivePagingBtn,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(8.0), // <-- Radius
-                            ), // NEW
-                          ),
-                          onPressed: () async {
-                            if (isRecordEnd) {
-                              await Alert.showOverlay(
-                                asyncFunction: () async {
-                                  var courseController =
-                                      context.read<CourseController>();
-                                  await writeToFile('solvepad.txt', _data);
-                                  final timestamp =
-                                      DateTime.now().millisecondsSinceEpoch;
-                                  List uploadUrl =
-                                      await firebaseService.uploadSolvepad(
-                                          '${widget.course.id!}_${widget.lesson.lessonId.toString()}_$timestamp',
-                                          'answer');
-                                  String solvepadId =
-                                      await firebaseService.writeSolvepadData(
-                                          uploadUrl[0], uploadUrl[1]);
-                                  await firebaseService.addAnswer(
-                                    courseId: widget.course.id!,
-                                    courseName: widget.course.courseName!,
-                                    courseTime: 0,
-                                    lesson: widget.lesson.lessonId!,
-                                    page: _currentPage,
-                                    solvepad: solvepadId,
-                                    tutorId: widget.course.tutorId!,
-                                    studentId: widget.studentId,
-                                    questionName: widget.questionText,
-                                    questionId: '',
-                                  );
-                                },
-                                context: context,
-                                loadingWidget: Alert.getOverlayScreen(),
-                              );
-                              if (!mounted) return;
-                              showSnackBar(context, 'อัพโหลดคำตอบ สำเร็จ');
-                            }
-                          },
-                          child: Row(
-                            children: [
-                              Text('อัพโหลด solvepad',
-                                  style: CustomStyles.bold14White),
-                              S.w(8),
-                              Container(
-                                width: 3,
-                                height: 16,
-                                color: CustomColors.whitePrimary,
-                              ),
-                              S.w(2),
-                              const Icon(
-                                Icons.arrow_forward,
-                                color: CustomColors.whitePrimary,
-                                size: 20.0,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-          S.w(16.0),
+          Expanded(child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              playAnswerButton(),
+            ],
+          )),
+          S.w(8.0),
         ],
       ),
     );
@@ -1900,7 +1719,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
                                   child: Text(
                                     courseName,
                                     style:
-                                        CustomStyles.bold16Black363636Overflow,
+                                    CustomStyles.bold16Black363636Overflow,
                                     maxLines: 1,
                                   ),
                                 ),
@@ -2029,7 +1848,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
                     color: CustomColors.whitePrimary,
                   ),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
@@ -2072,80 +1891,6 @@ class _RecordAnswerState extends State<RecordAnswer> {
               ],
             ),
           ),
-          // / Statistics
-          // Expanded(
-          //     flex: 2,
-          //     child: Align(
-          //       alignment: Alignment.centerRight,
-          //       child: InkWell(
-          //         onTap: () {
-          //           log('Go to Statistics');
-          //           showLeader(context);
-          //         },
-          //         child: Container(
-          //           decoration: BoxDecoration(
-          //             border: Border.all(
-          //               color: CustomColors.grayCFCFCF,
-          //               style: BorderStyle.solid,
-          //               width: 1.0,
-          //             ),
-          //             borderRadius: BorderRadius.circular(8),
-          //             color: CustomColors.whitePrimary,
-          //           ),
-          //           padding:
-          //               const EdgeInsets.symmetric(horizontal: 1, vertical: 6),
-          //           child: Padding(
-          //             padding: const EdgeInsets.all(6.0),
-          //             child: Row(
-          //               mainAxisSize: MainAxisSize.min,
-          //               mainAxisAlignment: MainAxisAlignment.center,
-          //               children: <Widget>[
-          //                 Image.asset(
-          //                   ImageAssets.leaderboard,
-          //                   height: 23,
-          //                   width: 25,
-          //                 ),
-          //                 S.w(8),
-          //                 Container(
-          //                   width: 1,
-          //                   height: 24,
-          //                   color: CustomColors.grayCFCFCF,
-          //                 ),
-          //                 S.w(8),
-          //                 Image.asset(
-          //                   ImageAssets.checkTrue,
-          //                   height: 18,
-          //                   width: 18,
-          //                 ),
-          //                 if (!Responsive.isTablet(context)) S.w(8.0),
-          //                 Text("100%", style: CustomStyles.bold14Gray878787),
-          //                 if (!Responsive.isTablet(context)) S.w(8.0),
-          //                 Image.asset(
-          //                   ImageAssets.x,
-          //                   height: 18,
-          //                   width: 18,
-          //                 ),
-          //                 if (!Responsive.isTablet(context)) S.w(8.0),
-          //                 Text("100%", style: CustomStyles.bold14Gray878787),
-          //                 if (!Responsive.isTablet(context)) S.w(8.0),
-          //                 Image.asset(
-          //                   ImageAssets.icQa,
-          //                   height: 18,
-          //                   width: 18,
-          //                 ),
-          //                 if (!Responsive.isTablet(context)) S.w(8.0),
-          //                 Text("100%", style: CustomStyles.bold14Gray878787),
-          //                 if (!Responsive.isTablet(context)) S.w(8.0),
-          //                 Image.asset(
-          //                   ImageAssets.arrowNextCircle,
-          //                   width: 21,
-          //                 ),
-          //               ],
-          //             ),
-          //           ),
-          //         ),
-          //       ),
-          //     )),
         ],
       ),
     );
@@ -2165,7 +1910,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
                   decoration: const BoxDecoration(
                     color: CustomColors.greenPrimary,
                     borderRadius:
-                        BorderRadius.only(topRight: Radius.circular(90)),
+                    BorderRadius.only(topRight: Radius.circular(90)),
                   ),
                 ),
                 Padding(
@@ -2313,126 +2058,117 @@ class _RecordAnswerState extends State<RecordAnswer> {
                   S.h(8),
                   selectedTools
                       ? Expanded(
-                          flex: 2,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Image.asset(
-                                  _listTools[_selectedIndexTools]
-                                      ['image_active'],
-                                  width: 10.w,
-                                )
-                              ],
-                            ),
-                          ),
-                        )
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            _listTools[_selectedIndexTools]
+                            ['image_active'],
+                            width: 10.w,
+                          )
+                        ],
+                      ),
+                    ),
+                  )
                       : Expanded(
-                          // flex: 2,
-                          child: Row(
-                            // mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              ListView.builder(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 8),
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  scrollDirection: Axis.horizontal,
-                                  shrinkWrap: true,
-                                  itemCount: _listTools.length,
-                                  itemBuilder: (context, index) {
-                                    return Row(
-                                      children: [
-                                        InkWell(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedIndexTools = index;
-                                            });
-                                            if (index == 0) {
-                                              _mode = DrawingMode.drag;
-                                            } else if (index == 1) {
-                                              _mode = DrawingMode.pen;
-                                            } else if (index == 2) {
-                                              _mode = DrawingMode.highlighter;
-                                            } else if (index == 3) {
-                                              _mode = DrawingMode.eraser;
-                                            } else if (index == 4) {
-                                              _mode = DrawingMode.laser;
-                                            }
-                                          },
-                                          child: Image.asset(
-                                            _selectedIndexTools == index
-                                                ? _listTools[index]
-                                                    ['image_active']
-                                                : _listTools[index]
-                                                    ['image_dis'],
-                                            width: 48,
-                                          ),
-                                        ),
-                                        S.w(8),
-                                      ],
-                                    );
-                                  }),
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    if (openLines || openMore == true) {
-                                      openLines = false;
-                                      openMore = false;
-                                    }
-                                    openColors = !openColors;
-                                  });
-                                },
-                                child: Image.asset(
-                                  _listColors[_selectedIndexColors]['color'],
-                                  width: 28,
-                                ),
-                              ),
-                              S.w(defaultPadding),
-                              InkWell(
-                                onTap: () {
-                                  log("Pick Line");
-
-                                  setState(() {
-                                    if (openColors || openMore == true) {
-                                      openColors = false;
-                                      openMore = false;
-                                    }
-                                    openLines = !openLines;
-                                  });
-                                },
-                                child: Image.asset(
-                                  ImageAssets.pickLine,
-                                  width: 38,
-                                ),
-                              ),
-                              S.w(4),
-                              // InkWell(
-                              //   onTap: () {
-                              //     log("Clear");
-                              //   },
-                              //   child: Image.asset(
-                              //     ImageAssets.bin,
-                              //     width: 38,
-                              //   ),
-                              // ),
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    selectedTools = !selectedTools;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  child: Image.asset(
-                                    ImageAssets.arrowLeftDouble,
-                                    width: 14,
+                    // flex: 2,
+                    child: Row(
+                      // mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        ListView.builder(
+                            padding:
+                            const EdgeInsets.symmetric(horizontal: 8),
+                            physics: const NeverScrollableScrollPhysics(),
+                            scrollDirection: Axis.horizontal,
+                            shrinkWrap: true,
+                            itemCount: _listTools.length,
+                            itemBuilder: (context, index) {
+                              return Row(
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedIndexTools = index;
+                                      });
+                                      if (index == 0) {
+                                        _mode = DrawingMode.drag;
+                                      } else if (index == 1) {
+                                        _mode = DrawingMode.pen;
+                                      } else if (index == 2) {
+                                        _mode = DrawingMode.highlighter;
+                                      } else if (index == 3) {
+                                        _mode = DrawingMode.eraser;
+                                      } else if (index == 4) {
+                                        _mode = DrawingMode.laser;
+                                      }
+                                    },
+                                    child: Image.asset(
+                                      _selectedIndexTools == index
+                                          ? _listTools[index]
+                                      ['image_active']
+                                          : _listTools[index]
+                                      ['image_dis'],
+                                      width: 48,
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
+                                  S.w(8),
+                                ],
+                              );
+                            }),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              if (openLines || openMore == true) {
+                                openLines = false;
+                                openMore = false;
+                              }
+                              openColors = !openColors;
+                            });
+                          },
+                          child: Image.asset(
+                            _listColors[_selectedIndexColors]['color'],
+                            width: 28,
                           ),
                         ),
+                        S.w(defaultPadding),
+                        InkWell(
+                          onTap: () {
+                            log("Pick Line");
+
+                            setState(() {
+                              if (openColors || openMore == true) {
+                                openColors = false;
+                                openMore = false;
+                              }
+                              openLines = !openLines;
+                            });
+                          },
+                          child: Image.asset(
+                            ImageAssets.pickLine,
+                            width: 38,
+                          ),
+                        ),
+                        S.w(4),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              selectedTools = !selectedTools;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            child: Image.asset(
+                              ImageAssets.arrowLeftDouble,
+                              width: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -2468,108 +2204,69 @@ class _RecordAnswerState extends State<RecordAnswer> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   S.h(12),
-                  // TODO: undo redo ??
-                  // Expanded(
-                  //   flex: 1,
-                  //   child: Padding(
-                  //     padding: const EdgeInsets.symmetric(
-                  //         horizontal: defaultPadding, vertical: 1),
-                  //     child: Row(
-                  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  //       children: [
-                  //         InkWell(
-                  //           onTap: () {
-                  //             log("Undo");
-                  //           },
-                  //           child: Image.asset(
-                  //             ImageAssets.undo,
-                  //             width: 38,
-                  //           ),
-                  //         ),
-                  //         InkWell(
-                  //           onTap: () {
-                  //             log("Redo");
-                  //           },
-                  //           child: Image.asset(
-                  //             ImageAssets.redo,
-                  //             width: 38,
-                  //           ),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //   ),
-                  // ),
-                  // Container(
-                  //     height: 2, width: 80, color: CustomColors.grayF3F3F3),
                   selectedTools
                       ? Expanded(
-                          flex: 2,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Image.asset(
-                                  _listTools[_selectedIndexTools]
-                                      ['image_active'],
-                                  width: 10.w,
-                                )
-                              ],
-                            ),
-                          ),
-                        )
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            _listTools[_selectedIndexTools]
+                            ['image_active'],
+                            width: 10.w,
+                          )
+                        ],
+                      ),
+                    ),
+                  )
                       : Expanded(
-                          flex: 7, // flex 4 if have all
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: ListView.builder(
-                                scrollDirection: Axis.vertical,
-                                shrinkWrap: true,
-                                itemCount: _listTools.length,
-                                itemBuilder: (context, index) {
-                                  return Column(
-                                    children: [
-                                      S.h(8),
-                                      InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            if (!isRecording) return;
-                                            _selectedIndexTools = index;
-                                          });
-                                          if (currentScrollZoom.isNotEmpty) {
-                                            addScrollZoom(currentScrollZoom,
-                                                currentScrollZoom[0].timestamp);
-                                            currentScrollZoom.clear();
-                                          }
-                                          if (index == 0) {
-                                            _mode = DrawingMode.drag;
-                                          } // drag
-                                          else if (index == 1) {
-                                            _mode = DrawingMode.pen;
-                                          } // pen
-                                          else if (index == 2) {
-                                            _mode = DrawingMode.highlighter;
-                                          } // high
-                                          else if (index == 3) {
-                                            _mode = DrawingMode.eraser;
-                                          } // eraser
-                                          else if (index == 4) {
-                                            _mode = DrawingMode.laser;
-                                          } // laser
-                                        },
-                                        child: Image.asset(
-                                          _selectedIndexTools == index
-                                              ? _listTools[index]
-                                                  ['image_active']
-                                              : _listTools[index]['image_dis'],
-                                          width: 10.w,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }),
-                          ),
-                        ),
+                    flex: 7, // flex 4 if have all
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ListView.builder(
+                          scrollDirection: Axis.vertical,
+                          shrinkWrap: true,
+                          itemCount: _listTools.length,
+                          itemBuilder: (context, index) {
+                            return Column(
+                              children: [
+                                S.h(8),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedIndexTools = index;
+                                    });
+                                    if (index == 0) {
+                                      _mode = DrawingMode.drag;
+                                    } // drag
+                                    else if (index == 1) {
+                                      _mode = DrawingMode.pen;
+                                    } // pen
+                                    else if (index == 2) {
+                                      _mode = DrawingMode.highlighter;
+                                    } // high
+                                    else if (index == 3) {
+                                      _mode = DrawingMode.eraser;
+                                    } // eraser
+                                    else if (index == 4) {
+                                      _mode = DrawingMode.laser;
+                                    } // laser
+                                  },
+                                  child: Image.asset(
+                                    _selectedIndexTools == index
+                                        ? _listTools[index]
+                                    ['image_active']
+                                        : _listTools[index]['image_dis'],
+                                    width: 10.w,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                    ),
+                  ),
                   Container(
                       height: 2, width: 80, color: CustomColors.grayF3F3F3),
                   Expanded(
@@ -2587,7 +2284,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
                                   Expanded(
                                     child: Row(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
+                                      MainAxisAlignment.spaceEvenly,
                                       children: [
                                         InkWell(
                                           onTap: () {
@@ -2602,7 +2299,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
                                           },
                                           child: Image.asset(
                                             _listColors[_selectedIndexColors]
-                                                ['color'],
+                                            ['color'],
                                             width: 38,
                                           ),
                                         ),
@@ -2625,42 +2322,6 @@ class _RecordAnswerState extends State<RecordAnswer> {
                                       ],
                                     ),
                                   ),
-                                  // TODO: do we need clear btn ?
-                                  // Expanded(
-                                  //   child: Row(
-                                  //     mainAxisAlignment:
-                                  //         MainAxisAlignment.spaceEvenly,
-                                  //     children: [
-                                  //       InkWell(
-                                  //         onTap: () {
-                                  //           log("Clear");
-                                  //         },
-                                  //         child: Image.asset(
-                                  //           ImageAssets.bin,
-                                  //           width: 38,
-                                  //         ),
-                                  //       ),
-                                  //       InkWell(
-                                  //         onTap: () {
-                                  //           log("More");
-                                  //
-                                  //           setState(() {
-                                  //             if (openColors ||
-                                  //                 openLines == true) {
-                                  //               openColors = false;
-                                  //               openLines = false;
-                                  //             }
-                                  //             openMore = !openMore;
-                                  //           });
-                                  //         },
-                                  //         child: Image.asset(
-                                  //           ImageAssets.more,
-                                  //           width: 38,
-                                  //         ),
-                                  //       ),
-                                  //     ],
-                                  //   ),
-                                  // ),
                                   Expanded(
                                     child: InkWell(
                                       onTap: () {

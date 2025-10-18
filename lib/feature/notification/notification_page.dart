@@ -120,6 +120,7 @@ class _NotificationPageState extends State<NotificationPage> {
                       MaterialPageRoute(
                         builder: (_) => ViewQuestion(
                           questionId: questionId,
+                          courseTime: data['courseAskTime'],
                           course: course,
                           lesson: lesson!,
                           studentId: studentId,

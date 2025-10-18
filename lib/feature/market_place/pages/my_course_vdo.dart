@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,9 @@ import 'package:solve_tutor/feature/calendar/widgets/widgets.dart';
 import 'package:solve_tutor/feature/market_place/pages/create_course.dart';
 import 'package:solve_tutor/feature/market_place/pages/update_course.dart';
 
+import '../../../authentication/service/auth_provider.dart';
+import '../../calendar/widgets/alert_snackbar.dart';
+
 class MyCourseVDOPage extends StatefulWidget {
   const MyCourseVDOPage({Key? key, required this.tutorId}) : super(key: key);
   final String tutorId;
@@ -25,13 +29,14 @@ class _MyCourseVDOPageState extends State<MyCourseVDOPage> {
   var courseController = CourseController();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
-
   var selectedLevel = '';
   var selectedSubject = '';
+  late AuthProvider auth;
 
   @override
   void initState() {
     super.initState();
+    auth = Provider.of<AuthProvider>(context, listen: false);
     courseController = Provider.of<CourseController>(context, listen: false);
     getData();
     courseController.getCourseListByTutorId(widget.tutorId);
@@ -196,14 +201,18 @@ class _MyCourseVDOPageState extends State<MyCourseVDOPage> {
                             ),
                           ),
                           onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CreateCoursePage(
-                                    tutorId: widget.tutorId,
-                                    courseType: CourseType.pad),
-                              ),
-                            );
+                            if (auth.user!.canCreate!) {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CreateCoursePage(
+                                      tutorId: widget.tutorId,
+                                      courseType: CourseType.pad),
+                                ),
+                              );
+                            } else {
+                              showSnackBar(context, 'กรุณาติดต่อ solve team เพื่อทำการยืนยันตัวตน ก่อนสร้างคอร์ส');
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: CustomColors.greenPrimary,

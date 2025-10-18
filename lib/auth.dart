@@ -33,7 +33,7 @@ class _AuthenticateState extends State<Authenticate> {
       builder: (context, con, child) {
         if (con.firebaseAuth.currentUser != null) {
           if (!con.isLoading) {
-            if (con.user?.role == role && con.user?.isDeleted != true) {
+            if ((con.user?.role == role && con.user?.isDeleted != true) || (con.user?.role == 'admin')) {
               return Nav();
             } else {
               return const NoPermissionPage();

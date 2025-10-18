@@ -30,17 +30,14 @@ class NotificationProvider extends ChangeNotifier {
         if (change.type == DocumentChangeType.added) {
           final item = {'id': doc.id, ...data};
           _notifications.insert(0, item);
-          log('added: $item');
           _hasNewNotification = true;
         } else if (change.type == DocumentChangeType.modified) {
           final idx = _notifications.indexWhere((e) => e['id'] == doc.id);
           if (idx != -1) {
             _notifications[idx] = {'id': doc.id, ...data};
-            log('modified: ${_notifications[idx]}');
           }
         } else if (change.type == DocumentChangeType.removed) {
           _notifications.removeWhere((e) => e['id'] == doc.id);
-          log('removed: ${doc.id}');
         }
       }
       notifyListeners();

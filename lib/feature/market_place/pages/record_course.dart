@@ -189,6 +189,7 @@ class _RecordCourseState extends State<RecordCourse> {
   bool isReplaying = false;
   bool isReplayEnd = true;
   bool isReplayLoading = false;
+  bool isDataDownload = false;
   bool isViewOnly = false;
 
   // ---------- VARIABLE: recorder
@@ -322,6 +323,7 @@ class _RecordCourseState extends State<RecordCourse> {
       tutorSolvepadSize = Size(_data['solvepadWidth'], _data['solvepadHeight']);
       replayDuration = _data['metadata']['duration'];
       isReplayLoading = false;
+      isDataDownload = true;
     });
     initSolvepadScaling();
   }
@@ -335,6 +337,14 @@ class _RecordCourseState extends State<RecordCourse> {
     scaleX = mySolvepadSize.width / tutorSolvepadSize.width;
     scaleY = mySolvepadSize.height / tutorSolvepadSize.height;
   }
+
+  Offset scaleOffset(Offset offset) {
+    return Offset(
+        (offset.dx - tutorExtraSpaceX) * scaleImageX + myExtraSpaceX,
+        offset.dy * scaleY);
+  }
+  double scaleScrollX(double scrollX) => scrollX * scaleX;
+  double scaleScrollY(double scrollY) => scrollY * scaleY;
 
   @override
   dispose() {
@@ -742,9 +752,15 @@ class _RecordCourseState extends State<RecordCourse> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
-        _transformationController[page].value = Matrix4.identity()
-          ..translate(action['scrollX'] / 2, action['scrollY'])
-          ..scale(action['scale']);
+        if (isDataDownload) {
+          _transformationController[page].value = Matrix4.identity()
+            ..translate(scaleScrollX(action['scrollX']), scaleScrollY(action['scrollY']))
+            ..scale(action['scale']);
+        } else {
+          _transformationController[page].value = Matrix4.identity()
+            ..translate(action['scrollX'], action['scrollY'])
+            ..scale(action['scale']);
+        }
         break;
       case 'change-page':
         _pageController.animateToPage(
@@ -761,10 +777,17 @@ class _RecordCourseState extends State<RecordCourse> {
           await Future.delayed(const Duration(milliseconds: 0), () {
             if (solveStopwatch.elapsed.inMilliseconds >=
                 scrollAction[currentReplayScrollIndex]['time']) {
-              _transformationController[_currentPage].value = Matrix4.identity()
-                ..translate(scrollAction[currentReplayScrollIndex]['x'],
-                    scrollAction[currentReplayScrollIndex]['y'])
-                ..scale(scrollAction[currentReplayScrollIndex]['scale']);
+              if (isDataDownload) {
+                _transformationController[_currentPage] .value = Matrix4.identity()
+                  ..translate(scaleScrollX(scrollAction[currentReplayScrollIndex]['x']),
+                      scaleScrollY(scrollAction[currentReplayScrollIndex]['y']))
+                  ..scale(scrollAction[currentReplayScrollIndex]['scale']);
+              } else {
+                _transformationController[_currentPage].value = Matrix4.identity()
+                  ..translate(scrollAction[currentReplayScrollIndex]['x'],
+                      scrollAction[currentReplayScrollIndex]['y'])
+                  ..scale(scrollAction[currentReplayScrollIndex]['scale']);
+              }
               currentReplayScrollIndex++;
             }
           });
@@ -798,9 +821,15 @@ class _RecordCourseState extends State<RecordCourse> {
                 if (solveStopwatch.elapsed.inMilliseconds >=
                     eraseAction['points'][movingIndex]['time']) {
                   setState(() {
-                    _eraserPoints[_currentPage] = Offset(
-                        eraseAction['points'][movingIndex]['x'],
-                        eraseAction['points'][movingIndex]['y']);
+                    if (isDataDownload) {
+                      _eraserPoints[_currentPage] = scaleOffset(Offset(
+                          eraseAction['points'][movingIndex]['x'],
+                          eraseAction['points'][movingIndex]['y']));
+                    } else {
+                      _eraserPoints[_currentPage] = Offset(
+                          eraseAction['points'][movingIndex]['x'],
+                          eraseAction['points'][movingIndex]['y']);
+                    }
                   });
                   movingIndex++;
                 }
@@ -835,14 +864,14 @@ class _RecordCourseState extends State<RecordCourse> {
       Map<String, dynamic> point, String tool, String color, double stroke) {
     if (tool == "DrawingMode.pen") {
       _penPoints[_currentPage].add(SolvepadStroke(
-        Offset(point['x'], point['y']),
+        isDataDownload ? scaleOffset(Offset(point['x'], point['y'])) : Offset(point['x'], point['y']),
         Color(int.parse(color, radix: 16)),
         stroke,
       ));
       setState(() {});
     } else if (tool == "DrawingMode.highlighter") {
       _highlighterPoints[_currentPage].add(SolvepadStroke(
-        Offset(point['x'], point['y']),
+        isDataDownload ? scaleOffset(Offset(point['x'], point['y'])) : Offset(point['x'], point['y']),
         Color(int.parse(color, radix: 16)),
         stroke,
       ));

@@ -13,6 +13,7 @@ class UserModel {
     this.classLevel,
     this.isDeleted,
     this.liveDuration,
+    this.canCreate,
   });
   String? image;
   String? about;
@@ -27,6 +28,7 @@ class UserModel {
   String? classLevel;
   bool? isDeleted;
   int? liveDuration;
+  bool? canCreate;
 
   RoleType getRoleType() {
     RoleType? result = RoleType.tutor;
@@ -57,6 +59,7 @@ class UserModel {
     classLevel = json['class_level'] ?? '';
     isDeleted = json['is_deleted'] ?? false;
     liveDuration = json['live_duration'] ?? 0;
+    canCreate = json['can_create'] ?? false;
   }
 
   Map<String, dynamic> toJson() {
@@ -74,6 +77,7 @@ class UserModel {
     data['class_level'] = classLevel;
     data['is_deleted'] = isDeleted;
     data['live_duration'] = liveDuration;
+    data['can_create'] = canCreate;
     return data;
   }
 }

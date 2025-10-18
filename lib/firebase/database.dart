@@ -139,6 +139,7 @@ class FirebaseService {
   Future<void> addAnswer({
     required String courseId,
     required String courseName,
+    required int courseTime,
     required int lesson,
     required int page,
     required String solvepad,
@@ -151,6 +152,7 @@ class FirebaseService {
       await db.collection('answer_market').add({
         'courseId': courseId,
         'courseName': courseName,
+        'courseTime': courseTime,
         'lesson': lesson,
         'page': page,
         'solvepad': solvepad,
@@ -158,6 +160,44 @@ class FirebaseService {
         'studentId': studentId,
         'questionName': questionName,
         'questionId': questionId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      log("Answer successfully written to answer_market.");
+    } catch (e) {
+      log("Error writing answer to Firestore: $e");
+    }
+  }
+
+  Future<void> addReuseAnswer({
+    required String courseId,
+    required String courseName,
+    required int courseTime,
+    required int lesson,
+    required int page,
+    required String solvepad,
+    required String tutorId,
+    required String studentId,
+    required String questionName,
+    required String questionId,
+    required String originalQuestionId,
+    required String originalAnswerId,
+  }) async {
+    try {
+      await db.collection('answer_market').add({
+        'courseId': courseId,
+        'courseName': courseName,
+        'courseTime': courseTime,
+        'lesson': lesson,
+        'page': page,
+        'solvepad': solvepad,
+        'tutorId': tutorId,
+        'studentId': studentId,
+        'questionName': questionName,
+        'questionId': questionId,
+        'originalQuestionId': originalQuestionId,
+        'originalAnswerId': originalAnswerId,
+        'isReuse': true,
         'timestamp': FieldValue.serverTimestamp(),
       });
 

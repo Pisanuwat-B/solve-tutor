@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -9,9 +10,11 @@ import 'package:solve_tutor/feature/calendar/widgets/dropdown.dart';
 import 'package:solve_tutor/feature/calendar/widgets/widgets.dart';
 
 import '../../calendar/controller/create_course_controller.dart';
+import '../../calendar/model/course_model.dart';
 import '../../calendar/model/select_option_item.dart';
 import '../../notification/answer_provider.dart';
 import '../../notification/student_provider.dart';
+import '../../notification/view_answer.dart';
 
 class AnswerLibrary extends StatefulWidget {
   const AnswerLibrary({super.key, required this.tutorId});
@@ -101,10 +104,7 @@ class _AnswerLibraryState extends State<AnswerLibrary> {
               items: answer.courseOptions, // List<SelectOptionItem>
               selectedValue: answer.selectedCourseId ?? '', // String id
               hintText: '-- เลือกคอร์ส --',
-              onChanged: (opt) => answer.selectCourse(
-                // opt is SelectOptionItem?
-                (opt as SelectOptionItem?)?.id,
-              ),
+              onChanged: (opt) => answer.selectCourse(opt),
             ),
           ),
         ],
@@ -128,7 +128,7 @@ class _AnswerLibraryState extends State<AnswerLibrary> {
                 isNarrow ? 1 : 2; // 50% width on normal screens
 
             return Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(20.0),
               child: GridView.builder(
                 itemCount: answers.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -141,15 +141,14 @@ class _AnswerLibraryState extends State<AnswerLibrary> {
                 itemBuilder: (context, index) {
                   final answer = answers[index];
 
-                  final String questionName =
-                      (answer['questionName'] as String?) ?? '';
-                  final String studentId =
-                      (answer['studentId'] as String?) ?? '';
+                  final String questionName = (answer['questionName'] as String?) ?? '';
+                  final String studentId = (answer['studentId'] as String?) ?? '';
                   final String studentName = students.getStudentName(studentId);
 
                   final String courseId = (answer['courseId'] as String?) ?? '';
-                  final String courseName =
-                      (answer['courseName'] as String?) ?? '';
+                  final String solvepadId = (answer['solvepad'] as String?) ?? '';
+                  final String courseName = (answer['courseName'] as String?) ?? '';
+                  final int courseTime = (answer['courseTime']) ?? 0;
 
                   // Find course image from CourseController (best-effort)
                   return FutureBuilder<String?>(
@@ -161,13 +160,19 @@ class _AnswerLibraryState extends State<AnswerLibrary> {
                       final int lesson = (answer['lesson'] as int?) ?? 0;
                       final int pageNo = (answer['page'] as int?) ?? 0;
 
-                      return _AnswerCardHalfWidth(
-                        questionName: questionName,
-                        studentName: studentName,
-                        courseName: courseName,
-                        courseImageUrl: courseImageUrl,
-                        lesson: lesson,
-                        pageNo: pageNo,
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: _AnswerCardHalfWidth(
+                          questionName: questionName,
+                          studentName: studentName,
+                          courseName: courseName,
+                          courseId: courseId,
+                          courseTime: courseTime,
+                          courseImageUrl: courseImageUrl,
+                          lesson: lesson,
+                          pageNo: pageNo,
+                          solvepadId: solvepadId,
+                        ),
                       );
                     },
                   );
@@ -185,7 +190,10 @@ class _AnswerCardHalfWidth extends StatelessWidget {
   final String questionName;
   final String studentName;
   final String courseName;
+  final String courseId;
+  final String solvepadId;
   final String? courseImageUrl;
+  final int courseTime;
   final int lesson;
   final int pageNo;
 
@@ -193,6 +201,9 @@ class _AnswerCardHalfWidth extends StatelessWidget {
     required this.questionName,
     required this.studentName,
     required this.courseName,
+    required this.courseId,
+    required this.solvepadId,
+    required this.courseTime,
     required this.lesson,
     required this.pageNo,
     this.courseImageUrl,
@@ -202,64 +213,108 @@ class _AnswerCardHalfWidth extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-                color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Left image uses tile width, not screen width
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
-              ),
-              child: AspectRatio(
-                aspectRatio: 1, // square-ish thumb area
+      child: InkWell(
+        onTap: () async {
+          log('tap _AnswerCardHalfWidth card');
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(child: CircularProgressIndicator()),
+          );
+
+          try {
+            final courseController = context.read<CourseController>();
+            final course = await courseController.getCourseById(courseId);
+
+            // Map the int lesson id to a Lessons object
+            Lessons lessonObj;
+            final lessons = course.lessons ?? const <Lessons>[];
+            final idx = lessons.indexWhere((l) => l.lessonId == lesson);
+            if (idx != -1) {
+              lessonObj = lessons[idx];
+            } else {
+              // fallback if not found in course doc
+              lessonObj = Lessons(lessonId: lesson, lessonName: 'Lesson $lesson');
+            }
+
+            if (context.mounted) {
+              Navigator.of(context).pop(); // close loader
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ViewAnswer(
+                    course: course,
+                    lesson: lessonObj,
+                    courseTime: courseTime,
+                    solvepadId: solvepadId,
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              Navigator.of(context).pop(); // close loader
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to open answer: $e')),
+              );
+            }
+          }
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Left image uses tile width, not screen width
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                ),
                 child: courseImageUrl != null && courseImageUrl!.isNotEmpty
                     ? Image.network(courseImageUrl!, fit: BoxFit.cover)
                     : Image.asset('assets/images/default_course_img.png',
                         fit: BoxFit.cover),
               ),
-            ),
 
-            // Right info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                    left: 10.0, right: 12.0, top: 10, bottom: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      questionName.isEmpty
-                          ? 'UNNAMED QUESTION From: $studentName'
-                          : 'คำตอบของ: $questionName',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Text("Student: $studentName"),
-                    Text("Course: $courseName"),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text("Lesson: $lesson"),
-                        const SizedBox(width: 16),
-                        Text("Page: $pageNo"),
-                      ],
-                    ),
-                  ],
+              // Right info
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                      left: 10.0, right: 12.0, top: 10, bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        questionName.isEmpty
+                            ? 'UNNAMED QUESTION From: $studentName'
+                            : 'คำตอบของ: $questionName',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Text("Student: $studentName"),
+                      Text("Course: $courseName"),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text("Lesson: $lesson"),
+                          const SizedBox(width: 16),
+                          Text("Page: $pageNo"),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

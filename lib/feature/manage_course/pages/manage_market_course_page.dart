@@ -9,6 +9,8 @@ import 'package:solve_tutor/widgets/sizer.dart';
 import '../../live_classroom/utils/responsive.dart';
 import '../../maintenance/maintenance.dart';
 import '../../market_place/pages/answer_library.dart';
+import '../../payment/pages/earning.dart';
+import '../../payment/pages/earning_admin.dart';
 
 class ManageMarketCoursePage extends StatefulWidget {
   const ManageMarketCoursePage({super.key});
@@ -98,6 +100,17 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                       ),
                     ],
                   ),
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/withdraw-money.png',
+                        'การเงิน',
+                        'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
+                        'left',
+                        RevenueSummaryPage(),
+                      ),
+                    ],
+                  ),
                 ],
                 if (Responsive.isMobile(context)) ...[
                   Row(
@@ -133,64 +146,67 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                           tutorId: auth?.uid ?? "",
                         ),
                       ),
+                      mobileCard(
+                        'assets/images/withdraw-money.png',
+                        'การเงิน',
+                        'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
+                        'left',
+                        RevenueSummaryPage(),
+                      ),
                     ],
                   ),
                 ],
                 if (Responsive.isTablet(context)) ...[
-                  GridView.count(
-                    shrinkWrap: true,
-                    primary: false,
-                    padding: const EdgeInsets.all(30),
-                    crossAxisSpacing: 30,
-                    mainAxisSpacing: 30,
-                    crossAxisCount: 3,
-                    children: <Widget>[
-                      gridCard(
-                        context,
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MyCourseVDOPage(
-                                tutorId: auth?.uid ?? "",
-                              ),
-                            ),
-                          );
-                        },
-                        image: 'assets/images/menu_my_course.png',
-                        title: "สร้างคอร์สด้วย SOLVE Pad",
-                        content: "สร้างคอร์สเพื่อลงขายใน Marketplace",
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/menu_my_course.png',
+                        'สร้างคอร์สด้วย Solvepad',
+                        'สร้างคอร์สเพื่อลงขายใน Marketplace',
+                        'left',
+                        MyCourseVDOPage(
+                          tutorId: auth?.uid ?? "",
+                        ),
                       ),
-                      gridCard(
-                        context,
-                        onTap: () async {
-                          var route = MaterialPageRoute(
-                            builder: (context) => MyDocumentPage(
-                              tutorId: auth?.uid ?? "",
-                            ),
-                          );
-                          await Navigator.push(context, route);
-                        },
-                        image: 'assets/images/menu_create_sheet.png',
-                        title: "สร้างชีท",
-                        content: "อัปโหลดเอกสารประกอบการสอน",
+                      mobileCard(
+                        'assets/images/menu_create_sheet.png',
+                        'สร้างชีท',
+                        'อัปโหลดเอกสารประกอบการสอน',
+                        'right',
+                        MyDocumentPage(
+                          tutorId: auth?.uid ?? "",
+                        ),
                       ),
-                      gridCard(
-                        context,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AnswerLibrary(
-                                tutorId: auth?.uid ?? "",
-                              ),
-                            ),
-                          );
-                        },
-                        image: 'assets/images/menu_qa.png',
-                        title: "คลังคำตอบ",
-                        content:
-                            "อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring",
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/menu_qa.png',
+                        'คลังคำตอบ',
+                        'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
+                        'left',
+                        AnswerLibrary(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                      mobileCard(
+                        'assets/images/withdraw-money.png',
+                        'การเงิน',
+                        'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
+                        'right',
+                        RevenueSummaryPage(),
+                      ),
+                    ],
+                  ),
+                  if (auth?.user?.role == 'admin') Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/scb_easy.png',
+                        'การเงินของ SOLVE',
+                        'ถ้าคุณกำลังอ่านบรรทัดนี้อยู่ คุณคือ admin',
+                        'solo',
+                        AdminFinance(),
                       ),
                     ],
                   ),
@@ -212,17 +228,41 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
                         'assets/images/menu_create_sheet.png',
                         'สร้างชีท',
                         'อัปโหลดเอกสารประกอบการสอน',
-                        'mid',
+                        'right',
                         MyDocumentPage(
                           tutorId: auth?.uid ?? "",
                         ),
                       ),
+                    ],
+                  ),
+                  Row(
+                    children: [
                       mobileCard(
                         'assets/images/menu_qa.png',
                         'คลังคำตอบ',
                         'อธิบายนักเรียนด้วยนวัตกรรม virtual one-on-one tutoring',
+                        'left',
+                        AnswerLibrary(
+                          tutorId: auth?.uid ?? "",
+                        ),
+                      ),
+                      mobileCard(
+                        'assets/images/withdraw-money.png',
+                        'การเงิน',
+                        'จัดการ Credits รายได้และยอดเงินเตรียมโอนของคุณ',
                         'right',
-                        const MaintenancePage(),
+                        RevenueSummaryPage(),
+                      ),
+                    ],
+                  ),
+                  if (auth?.user?.role == 'admin') Row(
+                    children: [
+                      mobileCard(
+                        'assets/images/scb_easy.png',
+                        'การเงินของ SOLVE',
+                        'ถ้าคุณกำลังอ่านบรรทัดนี้อยู่ คุณคือ admin',
+                        'solo',
+                        AdminFinance(),
                       ),
                     ],
                   ),
@@ -254,7 +294,7 @@ class _ManageMarketCoursePageState extends State<ManageMarketCoursePage> {
     } else if (position == 'tightRight') {
       cardPosition = const EdgeInsets.fromLTRB(7, 20, 14, 0);
     } else {
-      cardPosition = const EdgeInsets.fromLTRB(15, 25, 15, 0);
+      cardPosition = const EdgeInsets.fromLTRB(30, 25, 30, 0);
     }
     return Expanded(
       child: Container(
