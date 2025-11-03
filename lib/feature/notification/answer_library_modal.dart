@@ -51,7 +51,6 @@ class _AnswerLibraryModalState extends State<AnswerLibraryModal> {
 
   @override
   void dispose() {
-    context.read<AnswerProvider>().selectCourse(null);
     super.dispose();
   }
 
@@ -83,7 +82,10 @@ class _AnswerLibraryModalState extends State<AnswerLibraryModal> {
                             style: CustomStyles.bold22Black363636),
                       ),
                       IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () {
+                          context.read<AnswerProvider>().selectCourse(null);
+                          Navigator.of(context).pop(false);
+                        },
                         icon: const Icon(Icons.close),
                         color: CustomColors.gray878787,
                         tooltip: 'ปิด',
@@ -172,6 +174,7 @@ class _AnswerLibraryModalState extends State<AnswerLibraryModal> {
                                   );
 
                                   if (!mounted) return;
+                                  context.read<AnswerProvider>().selectCourse(null);
                                   Navigator.of(context).pop(true);
                                 } catch (e, st) {
                                   debugPrint('Failed to reuse answer: $e\n$st');

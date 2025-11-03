@@ -30,6 +30,7 @@ class ViewAnswer extends StatefulWidget {
   final Lessons lesson;
   final int courseTime;
   final String solvepadId;
+  final String questionName;
 
   const ViewAnswer({
     super.key,
@@ -37,6 +38,7 @@ class ViewAnswer extends StatefulWidget {
     required this.course,
     required this.courseTime,
     required this.solvepadId,
+    required this.questionName,
   });
 
   @override
@@ -733,7 +735,7 @@ class _ViewAnswerState extends State<ViewAnswer> {
         );
         await WidgetsBinding.instance.endOfFrame;
         _transformationController[page].value = Matrix4.identity()
-          ..translate(action['scrollX'] / 2, action['scrollY'])
+          ..translate(action['scrollX'] / 4, action['scrollY'])
           ..scale(action['scale']);
         break;
       case 'change-page':
@@ -1661,7 +1663,7 @@ class _ViewAnswerState extends State<ViewAnswer> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Flexible(
-                  child: Text('answer name',
+                  child: Text(widget.questionName,
                     style: CustomStyles.bold14RedF44336,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

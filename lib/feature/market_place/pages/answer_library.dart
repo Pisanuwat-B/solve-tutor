@@ -246,6 +246,7 @@ class _AnswerCardHalfWidth extends StatelessWidget {
                     lesson: lessonObj,
                     courseTime: courseTime,
                     solvepadId: solvepadId,
+                    questionName: questionName,
                   ),
                 ),
               );
@@ -292,8 +293,8 @@ class _AnswerCardHalfWidth extends StatelessWidget {
                     children: [
                       Text(
                         questionName.isEmpty
-                            ? 'UNNAMED QUESTION From: $studentName'
-                            : 'คำตอบของ: $questionName',
+                            ? 'Question from: $studentName'
+                            : questionName,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

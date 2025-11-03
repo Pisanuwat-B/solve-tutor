@@ -754,11 +754,11 @@ class _RecordCourseState extends State<RecordCourse> {
         );
         if (isDataDownload) {
           _transformationController[page].value = Matrix4.identity()
-            ..translate(scaleScrollX(action['scrollX']), scaleScrollY(action['scrollY']))
+            ..translate(scaleScrollX(action['scrollX'] / 2), scaleScrollY(action['scrollY']))
             ..scale(action['scale']);
         } else {
           _transformationController[page].value = Matrix4.identity()
-            ..translate(action['scrollX'], action['scrollY'])
+            ..translate(action['scrollX'] / 2, action['scrollY'])
             ..scale(action['scale']);
         }
         break;

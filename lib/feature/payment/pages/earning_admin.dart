@@ -1,13 +1,79 @@
 import 'dart:developer';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class AdminFinance extends StatelessWidget {
+import '../../live_classroom/components/room_loading_screen.dart';
+
+class AdminFinance extends StatefulWidget {
   const AdminFinance({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<AdminFinance> createState() => _AdminFinanceState();
+}
 
+class _AdminFinanceState extends State<AdminFinance> {
+  int? _subsCount = 0;
+  int? _courseCount = 0;
+  int? _tutorCount = 0;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final subsCount = await getTotalSubscribers();
+      final courseCount = await getPublishedCoursesCount();
+      final tutorCount = await getVerifiedTutorCount();
+      setState(() {
+        _subsCount = subsCount;
+        _courseCount = courseCount;
+        _tutorCount = tutorCount;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load';
+        _loading = false;
+      });
+    }
+  }
+
+  Future<int?> getTotalSubscribers() async {
+    final q = FirebaseFirestore.instance
+        .collection('users')
+        .where('isSubs', isEqualTo: true);
+
+    final agg = await q.count().get();     // aggregation query
+    return agg.count;
+  }
+
+  Future<int?> getPublishedCoursesCount() async {
+    final q = FirebaseFirestore.instance
+        .collection('course')
+        .where('publishing', isEqualTo: true);
+
+    final agg = await q.count().get();
+    return agg.count;
+  }
+
+  Future<int?> getVerifiedTutorCount() async {
+    final q = FirebaseFirestore.instance
+        .collection('users')
+        .where('can_create', isEqualTo: true);
+
+    final agg = await q.count().get();
+    return agg.count;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final earnings = _subsCount! * 599;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -17,7 +83,8 @@ class AdminFinance extends StatelessWidget {
         title: const Text('สรุปการเงิน สำหรับ Admin'),
         centerTitle: false,
       ),
-      body: ListView(
+      backgroundColor: const Color(0xFFF6F7F9),
+      body: _loading ? const LoadingScreen() : ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           Padding(
@@ -58,7 +125,7 @@ class AdminFinance extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'รายได้รวม (หลังหักค่าบริการ)',
+                            'รายได้รวม',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -70,7 +137,7 @@ class AdminFinance extends StatelessWidget {
                             style: TextStyle(color: Colors.grey),
                           ),
                           Text(
-                            '1198.00฿',
+                            '$earnings ฿',
                             style: TextStyle(
                               color: const Color(0xFF10B981),
                               fontSize: 28,
@@ -81,7 +148,7 @@ class AdminFinance extends StatelessWidget {
                       ),
                       _StatTile(
                         title: 'จำนวนนักเรียนที่กด subscribe',
-                        mainText: '2',
+                        mainText: '$_subsCount',
                         unit: 'คน',
                         accent: Colors.black87,
                       ),
@@ -106,11 +173,11 @@ class AdminFinance extends StatelessWidget {
                   LayoutBuilder(
                     builder: (context, c) {
                       final isNarrow = c.maxWidth < 600;
-                      final children = const [
+                      final children = [
                         _StatTile(
                           title: 'คอร์สเรียนทั้งหมด',
                           period: '01/10/2025 - 31/10/2025',
-                          mainText: '3',
+                          mainText: '$_courseCount',
                           unit: 'คอร์ส',
                           sub: 'จำนวนคอร์สออนไลน์ ที่นักเรียนสามารถเข้าถึงได้',
                           accent: Colors.black87,
@@ -118,10 +185,10 @@ class AdminFinance extends StatelessWidget {
                         _StatTile(
                           title: 'จำนวน tutor ที่ยืนยันตัวตนแล้ว',
                           period: '01/10/2025 - 31/10/2025',
-                          mainText: '3 คน',
+                          mainText: '$_tutorCount คน',
                           chipText: 'เพิ่มขึ้น 100% จากเดือนที่ผ่านมา',
                           chipIcon: Icons.trending_up,
-                          chipColor: Color(0xFF10B981),
+                          chipColor: const Color(0xFF10B981),
                           accent: Colors.black87,
                         ),
                       ];
@@ -161,7 +228,6 @@ class AdminFinance extends StatelessWidget {
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF6F7F9),
     );
   }
 }

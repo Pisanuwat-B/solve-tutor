@@ -195,7 +195,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
   bool isAnswerSent = false;
   bool isReplayLoading = false;
   bool isViewOnly = false;
-  bool _isReadyToShow = false;
+  // bool isSpecialX = false;
 
   // ---------- VARIABLE: recorder
   Codec _codec = Codec.aacMP4;
@@ -312,8 +312,6 @@ class _ViewQuestionState extends State<ViewQuestion> {
     var downloadData = await firebaseService.getMarketCourseSolvepadData(widget.solvepadId);
     String voicePath = await firebaseService.getMarketCourseAudioFile(downloadData[1]);
     _questionData = downloadData[0];
-    log('initQuestionData');
-    log(_questionData.toString());
     setState(() {
       questionVoicePath = voicePath;
       _mPlaybackReady = true;
@@ -384,7 +382,6 @@ class _ViewQuestionState extends State<ViewQuestion> {
         break;
       }
     }
-    setState(() { _isReadyToShow = true; });
   }
 
   Future<void> executeCourseAction(Map<String, dynamic> action) async {
@@ -607,6 +604,9 @@ class _ViewQuestionState extends State<ViewQuestion> {
   }
 
   void initAnswerSolvepadData() {
+    log('initAnswerSolvepadData');
+    log(currentScrollX.toString());
+    log(currentScrollY.toString());
     _answerData = {
       "version": "2.0.0",
       "solvepadWidth": mySolvepadSize.width,
@@ -884,7 +884,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
   }
 
   Future<void> showAnswerLibraryModal(String questionName) async {
-    final ok = await showDialog<String>(
+    final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
       builder: (_) => AnswerLibraryModal(
@@ -896,9 +896,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
       ),
     );
     if (ok == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('เลือกคำตอบ สำเร็จ')),
-      );
+      showSnackBar(context, 'เลือกคำตอบ สำเร็จ');
     }
   }
 
@@ -926,7 +924,6 @@ class _ViewQuestionState extends State<ViewQuestion> {
   }
 
   Future<void> executeReplayAction(Map<String, dynamic> action) async {
-    log('executeReplayAction call');
     switch (action['type']) {
       case 'start-recording':
         var page = action['page'];
@@ -937,7 +934,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
         );
         await WidgetsBinding.instance.endOfFrame;
         _transformationController[page].value = Matrix4.identity()
-          ..translate(action['scrollX'] / 2, action['scrollY'])
+          ..translate(action['scrollX'], action['scrollY'])
           ..scale(action['scale']);
         break;
       case 'change-page':
@@ -1064,8 +1061,11 @@ class _ViewQuestionState extends State<ViewQuestion> {
         _questionCurrentPage = page;
         await WidgetsBinding.instance.endOfFrame;
         _transformationController[page].value = Matrix4.identity()
-          ..translate(action['scrollX'] / 2, action['scrollY'])
+          ..translate(action['scrollX'], action['scrollY'])
           ..scale(action['scale']);
+        currentScale = action['scale'];
+        currentScrollX = action['scrollX'];
+        currentScrollY = action['scrollY'];
         break;
       case 'change-page':
         _pageController.animateToPage(
@@ -1084,12 +1084,13 @@ class _ViewQuestionState extends State<ViewQuestion> {
           await Future.delayed(const Duration(milliseconds: 0), () {
             if (questionStopwatch.elapsed.inMilliseconds >=
                 scrollAction[currentReplayScrollIndex]['time']) {
-              log('trigger scroll-zoom');
-              log(_questionCurrentPage.toString());
               _transformationController[_questionCurrentPage].value = Matrix4.identity()
                 ..translate(scrollAction[currentReplayScrollIndex]['x'],
                     scrollAction[currentReplayScrollIndex]['y'])
                 ..scale(scrollAction[currentReplayScrollIndex]['scale']);
+              currentScale = scrollAction[currentReplayScrollIndex]['scale'];
+              currentScrollX = scrollAction[currentReplayScrollIndex]['x'];
+              currentScrollY = scrollAction[currentReplayScrollIndex]['y'];
               currentReplayScrollIndex++;
             }
           });
@@ -1570,8 +1571,8 @@ class _ViewQuestionState extends State<ViewQuestion> {
           builder: (BuildContext context, BoxConstraints constraints) {
         double solvepadWidth = constraints.maxWidth;
         double solvepadHeight = constraints.maxHeight;
-        currentScrollX = (-1 * solvepadWidth);
         if (mySolvepadSize.width != solvepadWidth) {
+          currentScrollX = (-1 * solvepadWidth);
           mySolvepadSize = Size(solvepadWidth, solvepadHeight);
           log('my solvepad size: $mySolvepadSize');
         }
@@ -2150,7 +2151,9 @@ class _ViewQuestionState extends State<ViewQuestion> {
                         S.w(8),
                         InkWell(
                           // onTap: () => headerLayer1Mobile(),
-                          onTap: () => showAnswerLibraryModal(_questionName),
+                          onTap: () {
+                            showAnswerLibraryModal(_questionName);
+                          },
                           child: Image.asset(
                             ImageAssets.iconInfoPage,
                             height: 24,

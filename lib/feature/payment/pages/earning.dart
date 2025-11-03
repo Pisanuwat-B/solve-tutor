@@ -1,13 +1,105 @@
 import 'dart:developer';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class RevenueSummaryPage extends StatelessWidget {
+import '../../../authentication/service/auth_provider.dart';
+import '../../live_classroom/components/room_loading_screen.dart';
+
+class RevenueSummaryPage extends StatefulWidget {
   const RevenueSummaryPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<RevenueSummaryPage> createState() => _RevenueSummaryPage();
+}
 
+class _RevenueSummaryPage extends State<RevenueSummaryPage> {
+  late AuthProvider auth;
+  int? _subsCount = 0;
+  int? _tutorCount = 0;
+  int? _publishedCourseCount = 0;
+  int? _unpublishedCourseCount = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    auth = Provider.of<AuthProvider>(context, listen: false);
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final subsCount = await countSubscribedStudentsForTutor();
+      final tutorCount = await getVerifiedTutorCount();
+      final publishedCount = await getPublishedCountForTutor();
+      final unpublishedCount = await getUnpublishedCountForTutor();
+      setState(() {
+        _subsCount = subsCount;
+        _publishedCourseCount = publishedCount;
+        _unpublishedCourseCount = unpublishedCount;
+        _tutorCount = tutorCount;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  Future<int?> getVerifiedTutorCount() async {
+    final q = FirebaseFirestore.instance
+        .collection('users')
+        .where('can_create', isEqualTo: true);
+
+    final agg = await q.count().get();
+    return agg.count;
+  }
+
+  Future<int> countSubscribedStudentsForTutor() async {
+    final ordersSnap = await FirebaseFirestore.instance
+        .collection('orders')
+        .where('tutorId', isEqualTo: auth.user!.id!)
+        .get();
+
+    // Distinct student IDs
+    final studentIds = <String>{
+      for (final d in ordersSnap.docs)
+        (d.data()['studentId'] as String?) ?? ''
+    }..remove(''); // drop null/empty just in case
+
+    if (studentIds.isEmpty) return 0;
+    return studentIds.length;
+  }
+
+  Future<int?> getPublishedCountForTutor() async {
+    final q = FirebaseFirestore.instance
+        .collection('course')
+        .where('tutor_id', isEqualTo: auth.user!.id!)
+        .where('publishing', isEqualTo: true);
+    final agg = await q.count().get();
+    return agg.count;
+  }
+
+  Future<int?> getUnpublishedCountForTutor() async {
+    final q = FirebaseFirestore.instance
+        .collection('course')
+        .where('tutor_id', isEqualTo: auth.user!.id!)
+        .where('publishing', isEqualTo: false);
+    final agg = await q.count().get();
+    return agg.count;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double minimumExpectedEarn;
+    if (_subsCount == null || _subsCount == 0) {
+      minimumExpectedEarn = 0;
+    } else {
+      minimumExpectedEarn = 499 * _subsCount! / _tutorCount!;
+    }
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -17,7 +109,8 @@ class RevenueSummaryPage extends StatelessWidget {
         title: const Text('สรุปรายได้'),
         centerTitle: false,
       ),
-      body: ListView(
+      backgroundColor: const Color(0xFFF6F7F9),
+      body: _loading ? const LoadingScreen() : ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           Padding(
@@ -26,12 +119,12 @@ class RevenueSummaryPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'คอร์สบันทึกวิดีโอ',
+                  'คอร์ส solvepad',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'สรุปรายได้จากการขายคอร์สบันทึกวิดีโอบน marketplace',
+                  'สรุปรายได้จากการขายคอร์ส solvepad บน marketplace',
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
               ],
@@ -58,7 +151,7 @@ class RevenueSummaryPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'รายได้รวม (หลังหักค่าบริการ)',
+                            'รายได้รวม + (ยอดที่คุณกำลังจะได้รับ)',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -70,7 +163,7 @@ class RevenueSummaryPage extends StatelessWidget {
                             style: TextStyle(color: Colors.grey),
                           ),
                           Text(
-                            '850.00฿',
+                            '0.00฿ + ($minimumExpectedEarn)',
                             style: TextStyle(
                               color: const Color(0xFF10B981),
                               fontSize: 28,
@@ -100,22 +193,20 @@ class RevenueSummaryPage extends StatelessWidget {
                   LayoutBuilder(
                     builder: (context, c) {
                       final isNarrow = c.maxWidth < 600;
-                      final children = const [
+                      final children = [
                         _StatTile(
                           title: 'คอร์สเรียน',
                           period: '01/08/2023 - 31/08/2023',
-                          mainText: '3',
+                          mainText: '$_publishedCourseCount',
                           unit: 'คอร์ส',
-                          sub: 'คุณมี 3 คอร์สที่ยังไม่ได้ออนไลน์',
+                          sub: 'คุณมี $_unpublishedCourseCount คอร์สที่ยังไม่ได้ออนไลน์',
                           accent: Colors.black87,
                         ),
                         _StatTile(
-                          title: 'ยอดขาย',
+                          title: 'ยอดขายขั้นต่ำมี่คุณจะได้รับเดือนนี้',
                           period: '01/08/2023 - 31/08/2023',
-                          mainText: '1,000 ฿',
-                          chipText: 'เพิ่มขึ้น 5% จากเดือนที่ผ่านมา',
-                          chipIcon: Icons.trending_up,
-                          chipColor: Color(0xFF10B981),
+                          mainText: '$minimumExpectedEarn ฿',
+                          sub: 'คุณมีนักเรียน $_subsCount คน',
                           accent: Colors.black87,
                         ),
                       ];
@@ -155,7 +246,6 @@ class RevenueSummaryPage extends StatelessWidget {
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF6F7F9),
     );
   }
 }
