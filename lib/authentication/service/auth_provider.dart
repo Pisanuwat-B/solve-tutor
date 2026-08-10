@@ -166,56 +166,56 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // --------------more--------------------------
-  // Future<UserModel?> createAccount(
-  //     String name, String email, String password) async {
-  //   FirebaseAuth _auth = FirebaseAuth.instance;
-  //   FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  //   try {
-  //     UserCredential userCrendetial = await _auth
-  //         .createUserWithEmailAndPassword(email: email, password: password);
-  //     userCrendetial.user!.updateDisplayName(name);
-  //     final time = DateTime.now().millisecondsSinceEpoch.toString();
-  //     final chatUser = UserModel(
-  //       id: _auth.currentUser!.uid,
-  //       name: name,
-  //       email: email,
-  //       about: "I'm new.",
-  //       image: "",
-  //       createdAt: time,
-  //       isOnline: false,
-  //       lastActive: time,
-  //       pushToken: '',
-  //       role: 'tutor',
-  //     );
-  //     user = chatUser;
-  //     await _firestore
-  //         .collection('users')
-  //         .doc(_auth.currentUser!.uid)
-  //         .set(user!.toJson());
-  //     if (user?.role == null || user?.role == "") {
-  //       await updateRoleFirestore('tutor');
-  //     }
-  //     updateWallet();
-  //     notifyListeners();
-  //     return user;
-  //   } catch (e) {
-  //     print(e);
-  //     return null;
-  //   }
-  // }
+  Future<UserModel?> createAccount(
+      String name, String email, String password) async {
+    FirebaseAuth _auth = FirebaseAuth.instance;
+    FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    try {
+      UserCredential userCrendetial = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
+      userCrendetial.user!.updateDisplayName(name);
+      final time = DateTime.now().millisecondsSinceEpoch.toString();
+      final chatUser = UserModel(
+        id: _auth.currentUser!.uid,
+        name: name,
+        email: email,
+        about: "I'm new.",
+        image: "",
+        createdAt: time,
+        isOnline: false,
+        lastActive: time,
+        pushToken: '',
+        role: 'tutor',
+      );
+      user = chatUser;
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .set(user!.toJson());
+      if (user?.role == null || user?.role == "") {
+        await updateRoleFirestore('tutor');
+      }
+      updateWallet();
+      notifyListeners();
+      return user;
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
 
-  Future<User?> logIn(String email, String password) async {
+  Future<User?> signInWithEmailAndPassword(String email, String password) async {
     FirebaseAuth _auth = FirebaseAuth.instance;
     FirebaseFirestore _firestore = FirebaseFirestore.instance;
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
-      print("Login Sucessfull");
+      log("Login Sucessfull");
       _firestore.collection('users').doc(_auth.currentUser!.uid).get().then(
           (value) => userCredential.user!.updateDisplayName(value['name']));
       return userCredential.user;
     } catch (e) {
-      print(e);
+      log(e.toString());
       return null;
     }
   }

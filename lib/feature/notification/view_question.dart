@@ -927,6 +927,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
     switch (action['type']) {
       case 'start-recording':
         var page = action['page'];
+        _ensureControllersUpTo(page, mySolvepadSize.width);
         await _pageController.animateToPage(
           page,
           duration: const Duration(milliseconds: 300),
@@ -1053,6 +1054,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
     switch (action['type']) {
       case 'start-recording':
         var page = action['page'];
+        _ensureControllersUpTo(page, mySolvepadSize.width);
         await _pageController.animateToPage(
           page,
           duration: const Duration(milliseconds: 300),
@@ -1060,8 +1062,10 @@ class _ViewQuestionState extends State<ViewQuestion> {
         );
         _questionCurrentPage = page;
         await WidgetsBinding.instance.endOfFrame;
+        log('start ${action['scrollX'] }');
+        log('start ${action['scrollY'] }');
         _transformationController[page].value = Matrix4.identity()
-          ..translate(action['scrollX'], action['scrollY'])
+          ..translate(questionScaleScrollX(action['scrollX'] * 2), -200)
           ..scale(action['scale']);
         currentScale = action['scale'];
         currentScrollX = action['scrollX'];
@@ -1565,6 +1569,14 @@ class _ViewQuestionState extends State<ViewQuestion> {
     );
   }
 
+  void _ensureControllersUpTo(int page, double solvepadWidth) {
+    while (_transformationController.length <= page) {
+      _transformationController.add(
+          TransformationController()
+      );
+    }
+  }
+
   Widget solvePad() {
     return Expanded(
       child: LayoutBuilder(
@@ -1574,7 +1586,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
         if (mySolvepadSize.width != solvepadWidth) {
           currentScrollX = (-1 * solvepadWidth);
           mySolvepadSize = Size(solvepadWidth, solvepadHeight);
-          log('my solvepad size: $mySolvepadSize');
+          // log('my solvepad size: $mySolvepadSize');
         }
         return Stack(children: [
           PageView.builder(
@@ -1584,12 +1596,7 @@ class _ViewQuestionState extends State<ViewQuestion> {
             scrollDirection: Axis.vertical,
             itemCount: _pages.length,
             itemBuilder: (context, index) {
-              if (index >= _transformationController.length) {
-                _transformationController.add(TransformationController());
-                _transformationController[index].value = Matrix4.identity()
-                  ..scale(2.0)
-                  ..translate(-1 * solvepadWidth / 4, 0);
-              }
+              _ensureControllersUpTo(index, solvepadWidth);
               return InteractiveViewer(
                 transformationController: _transformationController[index],
                 alignment: const Alignment(-1, -1),

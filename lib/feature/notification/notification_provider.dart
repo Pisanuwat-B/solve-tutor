@@ -40,6 +40,7 @@ class NotificationProvider extends ChangeNotifier {
           _notifications.removeWhere((e) => e['id'] == doc.id);
         }
       }
+      // log(_notifications.toString());
       notifyListeners();
     });
   }

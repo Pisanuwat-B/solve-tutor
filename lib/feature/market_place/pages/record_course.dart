@@ -670,8 +670,8 @@ class _RecordCourseState extends State<RecordCourse> {
   void clearZoomPosition() {
     for (int i = 0; i < _transformationController.length; i++) {
       _transformationController[i].value = Matrix4.identity()
-        ..scale(2.0)
-        ..translate(-1 * mySolvepadSize.width / 4, 0);
+        ..scale(1.0)
+        ..translate(mySolvepadSize.width / 2, 0);
     }
   }
 
@@ -719,13 +719,12 @@ class _RecordCourseState extends State<RecordCourse> {
     });
 
     while (currentReplayIndex < _data['actions'].length) {
-      await Future.delayed(const Duration(milliseconds: 0), () async {
-        if (solveStopwatch.elapsed.inMilliseconds >=
-            _data['actions'][currentReplayIndex]['time']) {
-          await executeReplayAction(_data['actions'][currentReplayIndex]);
-          currentReplayIndex++;
-        }
-      });
+      if (solveStopwatch.elapsed.inMilliseconds  >= _data['actions'][currentReplayIndex]['time']) {
+        await executeReplayAction(_data['actions'][currentReplayIndex]);
+        currentReplayIndex++;
+      } else {
+        await Future.delayed(const Duration(milliseconds: 0));
+      }
     }
 
     endReplay();
@@ -747,11 +746,13 @@ class _RecordCourseState extends State<RecordCourse> {
     switch (action['type']) {
       case 'start-recording':
         var page = action['page'];
+        _ensureControllersUpTo(page, mySolvepadSize.width);
         _pageController.animateToPage(
           page,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
+        await WidgetsBinding.instance.endOfFrame;
         if (isDataDownload) {
           _transformationController[page].value = Matrix4.identity()
             ..translate(scaleScrollX(action['scrollX'] / 2), scaleScrollY(action['scrollY']))
@@ -848,6 +849,25 @@ class _RecordCourseState extends State<RecordCourse> {
             else if (eraseAction['mode'] == "high") {
               pointStack = _highlighterPoints[_currentPage];
             } // high
+
+            // CRITICAL GUARDS
+            int len = pointStack.length;
+
+            // If empty or only null, nothing to erase
+            if (len <= 1) return;
+
+            // Clamp indices into safe range
+            if (eraseAction['prev'] < 0) eraseAction['prev'] = 0;
+            if (eraseAction['next'] < 0) eraseAction['next'] = 0;
+            if (eraseAction['prev'] > len) eraseAction['prev'] = len - 1;
+            if (eraseAction['next'] > len) eraseAction['next'] = len - 1;
+
+            // Ensure prev <= next
+            if (eraseAction['prev'] >= eraseAction['next']) {
+              // invalid range → skip (or erase single point?)
+              return;
+            }
+
             setState(() {
               pointStack.removeRange(eraseAction['prev'], eraseAction['next']);
             });
@@ -1216,6 +1236,14 @@ class _RecordCourseState extends State<RecordCourse> {
     );
   }
 
+  void _ensureControllersUpTo(int page, double solvepadWidth) {
+    while (_transformationController.length <= page) {
+      _transformationController.add(
+        TransformationController()
+      );
+    }
+  }
+
   Widget solvePad() {
     return Expanded(
       child: LayoutBuilder(
@@ -1234,12 +1262,7 @@ class _RecordCourseState extends State<RecordCourse> {
             scrollDirection: Axis.vertical,
             itemCount: _pages.length,
             itemBuilder: (context, index) {
-              if (index >= _transformationController.length) {
-                _transformationController.add(TransformationController());
-                _transformationController[index].value = Matrix4.identity()
-                  ..scale(2.0)
-                  ..translate(-1 * solvepadWidth / 4, 0);
-              }
+              _ensureControllersUpTo(index, solvepadWidth);
               return InteractiveViewer(
                 transformationController: _transformationController[index],
                 alignment: const Alignment(-1, -1),

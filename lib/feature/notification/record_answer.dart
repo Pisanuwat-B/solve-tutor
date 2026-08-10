@@ -625,8 +625,8 @@ class _RecordAnswerState extends State<RecordAnswer> {
   void clearZoomPosition() {
     for (int i = 0; i < _transformationController.length; i++) {
       _transformationController[i].value = Matrix4.identity()
-        ..scale(2.0)
-        ..translate(-1 * mySolvepadSize.width / 4, 0);
+        ..scale(1.0)
+        ..translate(mySolvepadSize.width / 2, 0);
     }
   }
 
@@ -702,6 +702,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
     switch (action['type']) {
       case 'start-recording':
         var page = action['page'];
+        _ensureControllersUpTo(page, mySolvepadSize.width);
         _pageController.animateToPage(
           page,
           duration: const Duration(milliseconds: 300),
@@ -1152,6 +1153,14 @@ class _RecordAnswerState extends State<RecordAnswer> {
     );
   }
 
+  void _ensureControllersUpTo(int page, double solvepadWidth) {
+    while (_transformationController.length <= page) {
+      _transformationController.add(
+          TransformationController()
+      );
+    }
+  }
+
   Widget solvePad() {
     return Expanded(
       child: LayoutBuilder(
@@ -1170,12 +1179,7 @@ class _RecordAnswerState extends State<RecordAnswer> {
             scrollDirection: Axis.vertical,
             itemCount: _pages.length,
             itemBuilder: (context, index) {
-              if (index >= _transformationController.length) {
-                _transformationController.add(TransformationController());
-                _transformationController[index].value = Matrix4.identity()
-                  ..scale(2.0)
-                  ..translate(-1 * solvepadWidth / 4, 0);
-              }
+              _ensureControllersUpTo(index, solvepadWidth);
               return InteractiveViewer(
                 transformationController: _transformationController[index],
                 alignment: const Alignment(-1, -1),
