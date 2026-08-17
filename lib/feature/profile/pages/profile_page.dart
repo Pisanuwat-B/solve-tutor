@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:solve_tutor/auth.dart';
 import 'package:solve_tutor/authentication/service/auth_provider.dart';
 import 'package:solve_tutor/constants/theme.dart';
+import 'package:solve_tutor/feature/calendar/model/course_model.dart';
+import 'package:solve_tutor/feature/market_place/pages/record_course.dart';
 import 'package:solve_tutor/feature/payment/pages/solve_fund.dart';
 import 'package:solve_tutor/widgets/confirm_action_widget.dart';
 import 'package:solve_tutor/widgets/dialogs.dart';
@@ -399,26 +401,26 @@ class _ProfilePageState extends State<ProfilePage> {
                   Center(
                     child: Column(
                       children: [
-                        // ElevatedButton(
-                        //   onPressed: () {
-                        //     Navigator.push(
-                        //       context,
-                        //       MaterialPageRoute(
-                        //         builder: (context) => const TutorLiveClassroom(
-                        //           meetingId: 'test',
-                        //           userId: 'test',
-                        //           token: 'test',
-                        //           displayName: 'TEST TEST',
-                        //           isHost: true,
-                        //           courseId: 'test',
-                        //           startTime: 0,
-                        //           isMock: true,
-                        //         ),
-                        //       ),
-                        //     );
-                        //   },
-                        //   child: const Text('TEST'),
-                        // ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RecordCourse(
+                                  previewOnly: true,
+                                  course: CourseModel(
+                                    courseName: 'SolvePad Preview',
+                                  ),
+                                  lesson: Lessons(
+                                    lessonId: 0,
+                                    lessonName: 'preview',
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text('TEST SolvePad UI'),
+                        ),
                         TextButton(
                           onPressed: () async {
                             showDialog(

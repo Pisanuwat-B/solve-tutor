@@ -319,7 +319,7 @@ class _MyCourseVDOPageState extends State<MyCourseVDOPage> {
                   items: courseController.levels,
                   hintText: '-- ระดับชั้นปีการศึกษา --',
                   onChanged: (value) {
-                    selectedLevel = value ?? '';
+                    selectedLevel = value ?? 'คณิต';
                     courseController.courseFilter = courseController.courseList
                         .where((element) => element.levelId == value)
                         .toList();

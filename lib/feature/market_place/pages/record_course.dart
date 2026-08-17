@@ -40,10 +40,16 @@ import '../../live_classroom/utils/responsive.dart';
 class RecordCourse extends StatefulWidget {
   final CourseModel course;
   final Lessons lesson;
+
+  /// When true, skip all database/audio calls and just render the SolvePad UI
+  /// with placeholder pages. Used to preview the old UI after the DB
+  /// restructuring made the normal entry path unreachable.
+  final bool previewOnly;
   const RecordCourse({
     Key? key,
     required this.lesson,
     required this.course,
+    this.previewOnly = false,
   }) : super(key: key);
 
   @override
@@ -235,10 +241,10 @@ class _RecordCourseState extends State<RecordCourse> {
       ]);
     });
     initRecorderPath();
-    initAudio();
+    if (!widget.previewOnly) initAudio();
     initPagesData();
     initPagingBtn();
-    checkMediaExistence();
+    if (!widget.previewOnly) checkMediaExistence();
   }
 
   Future<void> initRecorderPath() async {
@@ -260,6 +266,23 @@ class _RecordCourseState extends State<RecordCourse> {
   }
 
   Future<void> initPagesData() async {
+    if (widget.previewOnly) {
+      setState(() {
+        _pages = [
+          'https://firebasestorage.googleapis.com/v0/b/solve-f1778.appspot.com/o/default_image%2Fa4.png?alt=media&token=01e0d9ac-15ed-4a62-886d-288c60ec1ee6',
+          'https://firebasestorage.googleapis.com/v0/b/solve-f1778.appspot.com/o/default_image%2Fa4.png?alt=media&token=01e0d9ac-15ed-4a62-886d-288c60ec1ee6',
+          'https://firebasestorage.googleapis.com/v0/b/solve-f1778.appspot.com/o/default_image%2Fa4.png?alt=media&token=01e0d9ac-15ed-4a62-886d-288c60ec1ee6',
+          'https://firebasestorage.googleapis.com/v0/b/solve-f1778.appspot.com/o/default_image%2Fa4.png?alt=media&token=01e0d9ac-15ed-4a62-886d-288c60ec1ee6',
+          'https://firebasestorage.googleapis.com/v0/b/solve-f1778.appspot.com/o/default_image%2Fa4.png?alt=media&token=01e0d9ac-15ed-4a62-886d-288c60ec1ee6',
+        ];
+        for (int i = 1; i < 5; i++) {
+          _addPage();
+        }
+        courseName = widget.course.courseName ?? 'SolvePad Preview';
+        isCourseLoaded = true;
+      });
+      return;
+    }
     await courseController.getCourseById(widget.course.id!);
     setState(() {
       if (courseController.courseData?.document?.data?.docFiles == null) {
